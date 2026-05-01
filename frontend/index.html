@@ -3,861 +3,421 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>SportsBet AI — Live Predictions Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<title>SportsBet AI — Live Predictions</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
-  :root {
-    --bg: #060A10;
-    --surface: #0C1220;
-    --surface2: #121A2E;
-    --surface3: #1A2438;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --accent: #00F5A0;
-    --accent2: #FF6B35;
-    --accent3: #6C63FF;
-    --accent4: #FFD166;
-    --text: #E8EDF5;
-    --muted: #4A5570;
-    --muted2: #7A8AA0;
-    --green: #00F5A0;
-    --yellow: #FFD166;
-    --red: #FF4D6D;
-    --blue: #4FC3F7;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,245,160,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,245,160,0.025) 1px, transparent 1px);
-    background-size: 48px 48px;
-    pointer-events: none;
-    z-index: 0;
-  }
-  .app { position: relative; z-index: 1; }
+:root{--bg:#060A10;--s1:#0C1220;--s2:#121A2E;--s3:#1A2438;--br:rgba(255,255,255,0.07);--br2:rgba(255,255,255,0.12);--ac:#00F5A0;--ac2:#FF6B35;--ac3:#6C63FF;--ac4:#FFD166;--tx:#E8EDF5;--mu:#4A5570;--mu2:#7A8AA0;--gr:#00F5A0;--yw:#FFD166;--rd:#FF4D6D;--bl:#4FC3F7}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,160,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,160,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+.app{position:relative;z-index:1}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--br);backdrop-filter:blur(24px);background:rgba(6,10,16,.9);position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--ac),var(--ac3));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-text{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;background:linear-gradient(90deg,var(--ac),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(0,245,160,.08);border:1px solid rgba(0,245,160,.25);padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;color:var(--ac);letter-spacing:1.5px;text-transform:uppercase}
+.live-dot{width:7px;height:7px;background:var(--ac);border-radius:50%;animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.src-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--br)}
+.src-live{color:var(--gr);border-color:rgba(0,245,160,.3);background:rgba(0,245,160,.06)}
+.src-curated{color:var(--yw);border-color:rgba(255,209,102,.3);background:rgba(255,209,102,.06)}
 
-  /* ─── HEADER ─── */
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 40px;
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(24px);
-    background: rgba(6,10,16,0.85);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .logo { display: flex; align-items: center; gap: 12px; }
-  .logo-icon {
-    width: 38px; height: 38px;
-    background: linear-gradient(135deg, var(--accent), var(--accent3));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-  }
-  .logo-text {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 26px; letter-spacing: 2px;
-    background: linear-gradient(90deg, var(--accent) 0%, #fff 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .header-right { display: flex; align-items: center; gap: 16px; }
-  .live-badge {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(0,245,160,0.08);
-    border: 1px solid rgba(0,245,160,0.25);
-    padding: 7px 14px; border-radius: 20px;
-    font-size: 11px; font-weight: 700; color: var(--accent);
-    letter-spacing: 1.5px; text-transform: uppercase;
-  }
-  .live-dot {
-    width: 7px; height: 7px;
-    background: var(--accent); border-radius: 50%;
-    animation: blink 1.4s infinite;
-  }
-  @keyframes blink { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.7); } }
-  .date-badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px; color: var(--muted2);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 7px 12px; border-radius: 8px;
-  }
+/* TICKER */
+.ticker{background:linear-gradient(90deg,rgba(255,107,53,.12),rgba(255,107,53,.04));border-bottom:1px solid rgba(255,107,53,.2);padding:9px 32px;display:flex;align-items:center;gap:12px;overflow:hidden}
+.ticker-lbl{font-size:10px;font-weight:800;color:var(--ac2);letter-spacing:2px;text-transform:uppercase;white-space:nowrap;background:rgba(255,107,53,.12);padding:3px 10px;border-radius:4px;border:1px solid rgba(255,107,53,.3)}
+.ticker-scroll{font-size:12px;color:var(--mu2);white-space:nowrap;animation:ticker 40s linear infinite}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ti{margin-right:60px;display:inline}
+.ti span{color:var(--ac4);font-weight:700}
 
-  /* ─── ALERT TICKER ─── */
-  .alert-ticker {
-    background: linear-gradient(90deg, rgba(255,107,53,0.15), rgba(255,107,53,0.05));
-    border-bottom: 1px solid rgba(255,107,53,0.2);
-    padding: 10px 40px;
-    display: flex; align-items: center; gap: 12px;
-    overflow: hidden;
-  }
-  .ticker-label {
-    font-size: 10px; font-weight: 800; color: var(--accent2);
-    letter-spacing: 2px; text-transform: uppercase;
-    white-space: nowrap;
-    background: rgba(255,107,53,0.15);
-    padding: 4px 10px; border-radius: 4px;
-    border: 1px solid rgba(255,107,53,0.3);
-  }
-  .ticker-scroll {
-    font-size: 12px; color: var(--muted2);
-    white-space: nowrap;
-    animation: ticker 35s linear infinite;
-  }
-  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  .ticker-item { margin-right: 60px; display: inline; }
-  .ticker-item span { color: var(--accent4); font-weight: 700; }
+/* STATS */
+.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--br);background:var(--s1)}
+.stat{padding:16px 24px;border-right:1px solid var(--br);text-align:center}
+.stat:last-child{border-right:none}
+.stat-n{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--ac);line-height:1}
+.stat-l{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
 
-  /* ─── STATS BAR ─── */
-  .stats-bar {
-    display: grid; grid-template-columns: repeat(5, 1fr);
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-  .stat-item {
-    padding: 18px 28px;
-    border-right: 1px solid var(--border);
-    text-align: center;
-    transition: background 0.2s;
-  }
-  .stat-item:last-child { border-right: none; }
-  .stat-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 32px; letter-spacing: 1px;
-    color: var(--accent); line-height: 1;
-  }
-  .stat-label {
-    font-size: 10px; color: var(--muted);
-    letter-spacing: 2px; text-transform: uppercase;
-    margin-top: 3px;
-  }
+/* MAIN */
+main{padding:28px 32px;max-width:1600px;margin:0 auto}
 
-  /* ─── MAIN ─── */
-  main { padding: 32px 40px; max-width: 1440px; margin: 0 auto; }
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--s1);padding:5px;border-radius:12px;width:fit-content;border:1px solid var(--br)}
+.tab{padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;color:var(--mu);border:none;background:none;display:flex;align-items:center;gap:7px;letter-spacing:.3px}
+.tab:hover{color:var(--tx)}
+.tab.active{background:var(--s2);color:var(--tx);box-shadow:0 0 20px rgba(0,245,160,.08),inset 0 0 0 1px rgba(0,245,160,.1)}
+.tab-n{background:rgba(0,245,160,.15);color:var(--ac);font-size:10px;font-weight:800;padding:2px 7px;border-radius:4px}
 
-  /* ─── TABS ─── */
-  .tabs {
-    display: flex; gap: 4px; margin-bottom: 28px;
-    background: var(--surface); padding: 5px;
-    border-radius: 12px; width: fit-content;
-    border: 1px solid var(--border);
-  }
-  .tab {
-    padding: 9px 22px; border-radius: 8px; cursor: pointer;
-    font-size: 13px; font-weight: 600;
-    transition: all 0.2s; color: var(--muted);
-    border: none; background: none;
-    display: flex; align-items: center; gap: 8px;
-    letter-spacing: 0.3px;
-  }
-  .tab:hover { color: var(--text); }
-  .tab.active {
-    background: var(--surface2); color: var(--text);
-    box-shadow: 0 0 20px rgba(0,245,160,0.08), inset 0 0 0 1px rgba(0,245,160,0.1);
-  }
-  .tab-badge {
-    background: rgba(0,245,160,0.15);
-    color: var(--accent);
-    font-size: 10px; font-weight: 800;
-    padding: 2px 7px; border-radius: 4px;
-    letter-spacing: 0.5px;
-  }
+/* CONTEXT BAR */
+.ctx-bar{background:rgba(0,245,160,.04);border:1px solid rgba(0,245,160,.12);border-radius:10px;padding:11px 16px;margin-bottom:18px;font-size:12px;color:var(--mu2);line-height:1.5}
 
-  /* ─── SECTION ─── */
-  .section-header {
-    display: flex; align-items: center;
-    justify-content: space-between;
-    margin-bottom: 18px;
-  }
-  .section-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 20px; letter-spacing: 2px;
-  }
-  .section-title .hl { color: var(--accent); }
-  .updated-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; color: var(--muted2);
-    display: flex; align-items: center; gap: 6px;
-  }
-  .updated-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: blink 2s infinite; }
+/* SECTION HEADER */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px}
+.sec-title .hl{color:var(--ac)}
+.upd{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mu2);display:flex;align-items:center;gap:6px}
+.upd-dot{width:6px;height:6px;background:var(--ac);border-radius:50%;animation:blink 2s infinite}
 
-  /* ─── GRID ─── */
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-    gap: 18px; margin-bottom: 36px;
-  }
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:18px;margin-bottom:32px}
 
-  /* ─── CARD ─── */
-  .pred-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    animation: fadeUp 0.4s ease both;
-  }
-  .pred-card:hover {
-    border-color: rgba(0,245,160,0.18);
-    transform: translateY(-2px);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(0,245,160,0.04);
-  }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:16px;overflow:hidden;transition:all .3s;animation:fadeUp .4s ease both}
+.card:hover{border-color:rgba(0,245,160,.18);transform:translateY(-2px);box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 30px rgba(0,245,160,.04)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.card-hdr{padding:12px 18px;background:var(--s2);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--br)}
+.card-league{font-size:10px;font-weight:800;color:var(--ac);letter-spacing:2px;text-transform:uppercase}
+.card-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mu2)}
+.card-body{padding:16px 18px}
+.matchup{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.team{text-align:center;flex:1}
+.team-name{font-size:14px;font-weight:700;line-height:1.3}
+.team-sub{font-size:10px;color:var(--mu);margin-top:2px;text-transform:uppercase;letter-spacing:1px}
+.vs{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--mu);padding:0 12px;flex-shrink:0}
 
-  .card-header {
-    padding: 13px 18px;
-    background: var(--surface2);
-    display: flex; align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-  }
-  .card-league { font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
-  .card-date { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); }
+/* INTEL */
+.intel{background:rgba(255,209,102,.05);border:1px solid rgba(255,209,102,.15);border-radius:8px;padding:9px 12px;margin-bottom:14px;display:flex;gap:8px;align-items:flex-start}
+.intel-ico{font-size:11px;flex-shrink:0;margin-top:1px}
+.intel-txt{font-size:11px;color:var(--mu2);line-height:1.5;font-style:italic}
 
-  .card-body { padding: 18px; }
+/* PROB BARS */
+.probs{margin-bottom:14px}
+.prob-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.prob-lbl{font-size:10px;color:var(--mu);width:66px;text-transform:uppercase;letter-spacing:.5px}
+.prob-bg{flex:1;height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+.prob-fill{height:100%;border-radius:3px;transition:width 1.2s ease}
+.prob-val{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;width:40px;text-align:right}
 
-  .matchup {
-    display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 16px;
-  }
-  .team { text-align: center; flex: 1; }
-  .team-name { font-size: 14px; font-weight: 700; line-height: 1.3; }
-  .team-sub { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
-  .vs {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 18px; color: var(--muted);
-    padding: 0 14px; flex-shrink: 0;
-  }
+/* PRED BOX */
+.pred-box{background:var(--s2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--br);margin-bottom:14px}
+.pred-res{display:flex;flex-direction:column;gap:2px}
+.pred-lbl{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:1.5px}
+.pred-val{font-size:15px;font-weight:700;color:var(--ac)}
+.ring{position:relative;width:52px;height:52px}
+.ring svg{transform:rotate(-90deg)}
+.ring-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx)}
 
-  /* Context / insider intel */
-  .intel-box {
-    background: rgba(255,209,102,0.05);
-    border: 1px solid rgba(255,209,102,0.15);
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 14px;
-    display: flex; gap: 8px;
-    align-items: flex-start;
-  }
-  .intel-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
-  .intel-text { font-size: 11px; color: var(--muted2); line-height: 1.5; font-style: italic; }
+/* GOALS SECTION */
+.goals-section{background:rgba(108,99,255,.06);border:1px solid rgba(108,99,255,.18);border-radius:10px;padding:14px;margin-bottom:0}
+.goals-title{font-size:10px;font-weight:800;color:var(--ac3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.goals-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.market-item{background:rgba(0,0,0,.2);border-radius:8px;padding:10px 12px;border:1px solid rgba(255,255,255,.06)}
+.market-name{font-size:10px;color:var(--mu2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.market-bars{display:flex;flex-direction:column;gap:4px}
+.mbar-row{display:flex;align-items:center;gap:6px}
+.mbar-lbl{font-size:9px;color:var(--mu);width:28px}
+.mbar-bg{flex:1;height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden}
+.mbar-fill{height:100%;border-radius:2px}
+.mbar-val{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;width:32px;text-align:right}
+.market-rec{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:3px 8px;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:.5px}
+.rec-yes{background:rgba(0,245,160,.12);color:var(--gr);border:1px solid rgba(0,245,160,.2)}
+.rec-no{background:rgba(255,77,109,.1);color:var(--rd);border:1px solid rgba(255,77,109,.2)}
 
-  /* Bars */
-  .prob-section { margin-bottom: 14px; }
-  .prob-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
-  .prob-label { font-size: 10px; color: var(--muted); width: 68px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .prob-bar-bg { flex: 1; height: 5px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
-  .prob-bar-fill { height: 100%; border-radius: 3px; transition: width 1.2s ease; }
-  .prob-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; width: 40px; text-align: right; }
+/* SCORE TABLE */
+.score-table{margin-top:8px}
+.score-table-title{font-size:9px;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.score-chips{display:flex;flex-wrap:wrap;gap:5px}
+.score-chip{background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.2);border-radius:5px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ac3)}
+.score-chip.top{background:rgba(108,99,255,.25);border-color:rgba(108,99,255,.4);color:#fff;font-weight:700}
 
-  /* Prediction box */
-  .prediction-box {
-    background: var(--surface2);
-    border-radius: 10px; padding: 13px 16px;
-    display: flex; align-items: center;
-    justify-content: space-between;
-    border: 1px solid var(--border);
-  }
-  .pred-result { display: flex; flex-direction: column; gap: 2px; }
-  .pred-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
-  .pred-value { font-size: 15px; font-weight: 700; color: var(--accent); }
-  .confidence-ring { position: relative; width: 52px; height: 52px; }
-  .confidence-ring svg { transform: rotate(-90deg); }
-  .confidence-text {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px; font-weight: 700; color: var(--text);
-  }
+/* CARD FOOTER */
+.card-ft{padding:11px 18px;border-top:1px solid var(--br);display:flex;align-items:center;justify-content:space-between}
+.bet-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.bet-green{background:rgba(0,245,160,.1);color:var(--gr);border:1px solid rgba(0,245,160,.22)}
+.bet-yellow{background:rgba(255,209,102,.1);color:var(--yw);border:1px solid rgba(255,209,102,.22)}
+.bet-red{background:rgba(255,77,109,.1);color:var(--rd);border:1px solid rgba(255,77,109,.2)}
+.model-acc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mu)}
 
-  .card-footer {
-    padding: 12px 18px;
-    border-top: 1px solid var(--border);
-    display: flex; align-items: center;
-    justify-content: space-between;
-  }
-  .bet-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 5px 11px; border-radius: 6px;
-    font-size: 10px; font-weight: 800;
-    letter-spacing: 1px; text-transform: uppercase;
-  }
-  .bet-badge.green { background: rgba(0,245,160,0.1); color: var(--green); border: 1px solid rgba(0,245,160,0.22); }
-  .bet-badge.yellow { background: rgba(255,209,102,0.1); color: var(--yellow); border: 1px solid rgba(255,209,102,0.22); }
-  .bet-badge.red { background: rgba(255,77,109,0.1); color: var(--red); border: 1px solid rgba(255,77,109,0.22); }
-  .model-acc { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+/* LOADING */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;gap:16px}
+.spinner{width:36px;height:36px;border:2px solid var(--br2);border-top-color:var(--ac);border-radius:50%;animation:spin .75s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mu);letter-spacing:2px}
 
-  /* ─── CUSTOM PREDICT ─── */
-  .custom-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px; padding: 26px;
-    margin-bottom: 40px;
-  }
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 14px; margin-top: 18px;
-  }
-  .form-group { display: flex; flex-direction: column; gap: 6px; }
-  .form-label { font-size: 10px; color: var(--muted2); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; }
-  .form-input, .form-select {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 13px;
-    color: var(--text); font-size: 13px;
-    font-family: 'DM Sans', sans-serif;
-    transition: border-color 0.2s; outline: none;
-  }
-  .form-input:focus, .form-select:focus { border-color: rgba(0,245,160,0.35); }
-  .predict-btn {
-    background: linear-gradient(135deg, var(--accent) 0%, #00C47A 100%);
-    color: #000; border: none; border-radius: 10px;
-    padding: 13px 28px; font-size: 13px; font-weight: 800;
-    cursor: pointer; letter-spacing: 1px; text-transform: uppercase;
-    transition: all 0.2s; margin-top: 18px;
-  }
-  .predict-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(0,245,160,0.25); }
-  .predict-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-  .custom-result {
-    margin-top: 20px;
-    background: var(--surface2);
-    border-radius: 12px; padding: 20px;
-    border: 1px solid rgba(0,245,160,0.18);
-    animation: fadeUp 0.3s ease;
-  }
-  .result-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 12px; }
-  .result-item { text-align: center; }
-  .result-num { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--accent); }
-  .result-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+/* CUSTOM SECTION */
+.custom-sec{background:var(--s1);border:1px solid var(--br);border-radius:16px;padding:24px;margin-bottom:32px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:16px}
+.form-grp{display:flex;flex-direction:column;gap:5px}
+.form-lbl{font-size:10px;color:var(--mu2);text-transform:uppercase;letter-spacing:1.2px;font-weight:700}
+.form-inp{background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:9px 12px;color:var(--tx);font-size:13px;font-family:'DM Sans',sans-serif;transition:border-color .2s;outline:none}
+.form-inp:focus{border-color:rgba(0,245,160,.35)}
+.pred-btn{background:linear-gradient(135deg,var(--ac),#00C47A);color:#000;border:none;border-radius:10px;padding:12px 28px;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;margin-top:16px}
+.pred-btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(0,245,160,.25)}
+.pred-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.custom-result{margin-top:18px;background:var(--s2);border-radius:12px;padding:18px;border:1px solid rgba(0,245,160,.18);animation:fadeUp .3s ease}
 
-  /* ─── LOADING ─── */
-  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px; gap: 16px; }
-  .spinner { width: 36px; height: 36px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 2px; }
-
-  /* ─── FOOTER ─── */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 22px 40px; text-align: center;
-    font-size: 11px; color: var(--muted);
-  }
-  .disclaimer {
-    background: rgba(255,77,109,0.05);
-    border: 1px solid rgba(255,77,109,0.12);
-    border-radius: 8px; padding: 10px 20px;
-    font-size: 10px; color: var(--muted2);
-    margin-bottom: 10px; display: inline-block;
-  }
-
-  @media (max-width: 768px) {
-    header { padding: 14px 16px; }
-    main { padding: 18px 16px; }
-    .stats-bar { grid-template-columns: repeat(3,1fr); }
-    .stat-item:nth-child(4), .stat-item:nth-child(5) { display: none; }
-    .cards-grid { grid-template-columns: 1fr; }
-    .header-right .date-badge { display: none; }
-    .alert-ticker { padding: 8px 16px; }
-  }
+footer{border-top:1px solid var(--br);padding:20px 32px;text-align:center;font-size:11px;color:var(--mu)}
+.disclaimer{background:rgba(255,77,109,.05);border:1px solid rgba(255,77,109,.12);border-radius:8px;padding:9px 18px;font-size:10px;color:var(--mu2);margin-bottom:10px;display:inline-block}
+@media(max-width:768px){header{padding:12px 16px}main{padding:16px}stats-bar{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="app" id="root"></div>
-<script type="module">
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
-// ⬇️ UPDATE THIS after Railway deploys your backend — paste your Railway backend URL here
-const API_BASE = window.BACKEND_URL || "https://sportsbet-ai-production.up.railway.app/api";
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const API_BASE = "https://sportsbet-ai-production.up.railway.app/api";
 const TODAY = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 
-// ─── REAL FIXTURE DATA (Apr/May 2026 — verified from live sources) ──────────
-const REAL_DATA = {
-  soccer: {
-    label: "Premier League GW35/36",
-    context_header: "⚡ TITLE RACE DECIDER — Man City trail Arsenal by 3pts. City have a game in hand. 5 games left.",
-    fixtures: [
-      {
-        home_team: "Arsenal", away_team: "Fulham",
-        league: "Premier League GW35", date: "2026-05-02 12:30",
-        intel: "🔴 Eze + Havertz both injured vs Newcastle (Apr 26). Arsenal anxious but Fulham have nothing to play for — mid-table comfort. Arsenal still 3pts clear at top.",
-        prediction: "Home Win", confidence: 91, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 91, "Draw": 6, "Away Win": 3 }
-      },
-      {
-        home_team: "Everton", away_team: "Manchester City",
-        league: "Premier League GW35", date: "2026-05-04 15:00",
-        intel: "🔥 City's GAME IN HAND. Win sends them top of the league. Haaland on 34 goals (back to scoring after dry Feb patch). Everton fighting relegation — Burnley & Wolves already down, one spot left. City on 5 straight wins.",
-        prediction: "Away Win", confidence: 96, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 2, "Draw": 2, "Away Win": 96 }
-      },
-      {
-        home_team: "Manchester United", away_team: "Liverpool",
-        league: "Premier League GW35", date: "2026-05-03 10:30",
-        intel: "⚔️ Michael Carrick's Man Utd (stabilised since Amorim sacking Jan 5) vs Liverpool in European race. Both targeting Top 4/Europa. Utd on 11-match unbeaten run earlier in season. Old Trafford crowd factor is real.",
-        prediction: "Home Win", confidence: 80, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 80, "Draw": 12, "Away Win": 8 }
-      },
-      {
-        home_team: "Liverpool", away_team: "Chelsea",
-        league: "Premier League GW36", date: "2026-05-09 07:30",
-        intel: "💀 Chelsea in historic crisis: 5 consecutive defeats WITHOUT SCORING — worst run since 1912. Manager Liam Rosenior sacked Apr 22 after less than 4 months. Playing under interim boss. Liverpool should have no trouble here.",
-        prediction: "Home Win", confidence: 91, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 91, "Draw": 6, "Away Win": 3 }
-      },
-      {
-        home_team: "Aston Villa", away_team: "Tottenham",
-        league: "Premier League GW35", date: "2026-05-03 14:00",
-        intel: "📈 Villa on LEAGUE'S LONGEST WINNING RUN (8 games). Spurs chaos: sacked Thomas Frank (Feb), then Igor Tudor (Mar 29), Roberto De Zerbi just took over Mar 31. Spurs sit 17th in relegation battle. Villa showing up for European football.",
-        prediction: "Home Win", confidence: 98, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 98, "Draw": 1, "Away Win": 1 }
-      },
-    ]
-  },
-  nba: {
-    label: "NBA Playoffs 2026 — Round 1",
-    context_header: "🏆 PLAYOFFS FIRST ROUND — OKC Thunder & San Antonio Spurs already advanced. Multiple series at decisive Game 5/6.",
-    fixtures: [
-      {
-        home_team: "Detroit Pistons", away_team: "Orlando Magic",
-        league: "NBA Playoffs R1 — Game 5", date: "2026-04-29 19:00",
-        intel: "🪄 Magic lead 3-1. Pistons (1-seed) being upset by Magic (8-seed). Cade Cunningham's offense smothered — Pistons avg just 98pts in series. Magic ended Pistons' historic 11-game home playoff losing streak (back to 2008) with G2 win. Magic closing out tonight.",
-        prediction: "Away Win", confidence: 74, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 26, "Draw": 0, "Away Win": 74 }
-      },
-      {
-        home_team: "Boston Celtics", away_team: "Philadelphia 76ers",
-        league: "NBA Playoffs R1 — Game 6", date: "2026-04-30 19:00",
-        intel: "☘️ Celtics lead 3-2. VJ Edgecombe made history with 30-10 in G2 for 76ers. Embiid returned from appendectomy in G4 but Celtics won 128-96 anyway. Celtics at home to close it out. Boston tied NBA record with 29 3-pointers in regular season win.",
-        prediction: "Home Win", confidence: 94, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 94, "Draw": 0, "Away Win": 6 }
-      },
-      {
-        home_team: "Denver Nuggets", away_team: "Minnesota Timberwolves",
-        league: "NBA Playoffs R1 — Game 6", date: "2026-04-30 21:30",
-        intel: "🦴 Anthony Edwards suffered HYPEREXTENDED LEFT KNEE + bone bruise in G4. Massive injury concern for Wolves. Jokic posted triple-double in G5 to keep Nuggets alive (3-2 lead). Without healthy Edwards, Minnesota's title run looks over.",
-        prediction: "Home Win", confidence: 97, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 97, "Draw": 0, "Away Win": 3 }
-      },
-      {
-        home_team: "Los Angeles Lakers", away_team: "Houston Rockets",
-        league: "NBA Playoffs R1 — Game 6", date: "2026-04-30 22:00",
-        intel: "🏥 Rockets are DECIMATED by injury: Kevin Durant, Luka Doncic AND Austin Reaves all sidelined. Sengun (19pts in G1) carrying team almost alone. LeBron James 13 assists in G1 win. First LeBron vs KD playoff matchup since 2018 Finals — if KD returns.",
-        prediction: "Home Win", confidence: 97, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 97, "Draw": 0, "Away Win": 3 }
-      },
-      {
-        home_team: "New York Knicks", away_team: "Atlanta Hawks",
-        league: "NBA Playoffs R1 — Game 6", date: "2026-04-30 19:30",
-        intel: "🗽 Knicks lead 3-2 after dominant G5 BLOWOUT 126-97. Hawks showed heart winning G2 by just 1pt, but Knicks are clearly the superior team. Knicks looking for 4th consecutive playoff trip. MSG crowd will be electric.",
-        prediction: "Home Win", confidence: 96, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 96, "Draw": 0, "Away Win": 4 }
-      },
-    ]
-  },
-  nfl: {
-    label: "NFL 2026 Season Preview",
-    context_header: "🏈 NFL 2025-26 SEASON ENDED — Previewing key 2026-27 opener matchups (Sep 2026).",
-    fixtures: [
-      {
-        home_team: "Kansas City Chiefs", away_team: "Baltimore Ravens",
-        league: "NFL 2026 Season Opener", date: "2026-09-10 20:20",
-        intel: "🏆 Chiefs aiming for 3-peat. Mahomes vs Lamar Jackson — two MVP-calibre QBs. Ravens held AFC's #2 seed last season. Widely expected to be the preview of the AFC Championship Game. Most anticipated opener in years.",
-        prediction: "Home Win", confidence: 61, bet_value: "MODERATE", bet_color: "yellow",
-        probs: { "Home Win": 61, "Draw": 2, "Away Win": 37 }
-      },
-      {
-        home_team: "Philadelphia Eagles", away_team: "Dallas Cowboys",
-        league: "NFL 2026 Season Opener", date: "2026-09-13 16:25",
-        intel: "🦅 Eagles won NFC East last season under Nick Sirianni. Cowboys under pressure after early playoff exit. Jalen Hurts vs Dak Prescott in classic blood rivalry. Eagles at home — serious advantage.",
-        prediction: "Home Win", confidence: 67, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 67, "Draw": 1, "Away Win": 32 }
-      },
-      {
-        home_team: "San Francisco 49ers", away_team: "LA Rams",
-        league: "NFL 2026 Season Opener", date: "2026-09-13 16:25",
-        intel: "🌉 NFC West classics continue. Stafford (Rams) vs Purdy (49ers). 49ers looking to bounce back from disappointing 2025 season. Levi's Stadium advantage and deeper roster gives 49ers the edge.",
-        prediction: "Home Win", confidence: 62, bet_value: "MODERATE", bet_color: "yellow",
-        probs: { "Home Win": 62, "Draw": 2, "Away Win": 36 }
-      },
-    ]
-  },
-  tennis: {
-    label: "Madrid Open + Rome Preview",
-    context_header: "🎾 MUTUA MADRID OPEN ONGOING (Apr 21–May 3). Sinner vs Alcaraz final anticipated. Rome Masters starts May 6.",
-    fixtures: [
-      {
-        home_team: "Jannik Sinner (#1)", away_team: "Alexander Zverev (#3)",
-        league: "Madrid Open SF — Clay", date: "2026-05-02 14:00",
-        intel: "🔥 Sinner UNBEATEN in Masters 1000 since Shanghai — dropped just ONE SET across that entire run. Zverev has been consistently losing to top-2 players at SF stage all season. Sinner came in fresh after a week off. Heavy favourite.",
-        prediction: "Home Win", confidence: 84, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 84, "Draw": 0, "Away Win": 16 }
-      },
-      {
-        home_team: "Carlos Alcaraz (#2)", away_team: "Alex de Minaur (#9)",
-        league: "Madrid Open SF — Clay", date: "2026-05-02 16:00",
-        intel: "🇪🇸 Alcaraz on HOME SOIL at Caja Magica with crowd going insane for him. De Minaur has been the tournament's surprise but Alcaraz dominates this H2H. Alcaraz withdrew from Barcelona with injury concern but has been cleared.",
-        prediction: "Home Win", confidence: 73, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 73, "Draw": 0, "Away Win": 27 }
-      },
-      {
-        home_team: "Jannik Sinner (#1)", away_team: "Carlos Alcaraz (#2)",
-        league: "Madrid Open Final — Clay", date: "2026-05-03 17:00",
-        intel: "👑 THE MATCH. Sinner beat Alcaraz in Barcelona weeks ago. But Alcaraz is on HOME SOIL in Madrid — last home champion was Alcaraz in 2023. Best rivalry in tennis. Sinner's form is historically dominant. Expect a war — this will be decided in details.",
-        prediction: "Home Win", confidence: 50, bet_value: "LOW VALUE", bet_color: "red",
-        probs: { "Home Win": 50, "Draw": 0, "Away Win": 50 }
-      },
-      {
-        home_team: "Sinner/Alcaraz Winner", away_team: "Casper Ruud (#7)",
-        league: "Rome Masters Preview — May 6+", date: "2026-05-10 14:00",
-        intel: "🇮🇹 Rome is next stop on clay. Ruud won the title here in 2020, knows the surface well. But whoever wins Madrid will arrive with historic momentum and confidence. Roland Garros is the ultimate prize on the horizon.",
-        prediction: "Home Win", confidence: 83, bet_value: "HIGH VALUE", bet_color: "green",
-        probs: { "Home Win": 83, "Draw": 0, "Away Win": 17 }
-      },
-    ]
-  }
+// ─── CURATED FALLBACK DATA ───────────────────────────────────────────────────
+const FALLBACK = {
+  soccer:[
+    {home_team:"Arsenal",away_team:"Fulham",league:"Premier League GW35",date:"2026-05-02 12:30",intel:"🔴 Eze + Havertz injured. Arsenal 3pts clear. Fulham nothing to play for.",prediction:"Home Win",confidence:91,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":91,"Draw":6,"Away Win":3},goals:{predicted_home_goals:1.8,predicted_away_goals:0.7,predicted_total:2.5,markets:{over_1_5:{yes:88,no:12,recommendation:"YES"},over_2_5:{yes:52,no:48,recommendation:"YES"},over_3_5:{yes:18,no:82,recommendation:"NO"},btts:{yes:45,no:55,recommendation:"NO"}},correct_score:[["2-0",14.1],["1-0",13.2],["2-1",12.8],["3-0",8.4],["3-1",7.2],["1-1",6.9]]}},
+    {home_team:"Everton",away_team:"Manchester City",league:"Premier League GW35",date:"2026-05-04 15:00",intel:"🔥 City GAME IN HAND. Win sends them top. Haaland 34 goals. City 5-match winning run.",prediction:"Away Win",confidence:96,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":2,"Draw":2,"Away Win":96},goals:{predicted_home_goals:0.6,predicted_away_goals:2.8,predicted_total:3.4,markets:{over_1_5:{yes:91,no:9,recommendation:"YES"},over_2_5:{yes:76,no:24,recommendation:"YES"},over_3_5:{yes:44,no:56,recommendation:"NO"},btts:{yes:38,no:62,recommendation:"NO"}},correct_score:[["0-2",16.2],["0-3",13.4],["1-3",10.1],["0-4",8.8],["0-1",8.2],["1-2",7.9]]}},
+    {home_team:"Manchester United",away_team:"Liverpool",league:"Premier League GW35",date:"2026-05-03 10:30",intel:"⚔️ Carrick's Utd vs Liverpool. European race. Old Trafford crowd factor real.",prediction:"Home Win",confidence:58,bet_value:"MODERATE",bet_color:"yellow",probs:{"Home Win":58,"Draw":22,"Away Win":20},goals:{predicted_home_goals:1.4,predicted_away_goals:1.5,predicted_total:2.9,markets:{over_1_5:{yes:84,no:16,recommendation:"YES"},over_2_5:{yes:61,no:39,recommendation:"YES"},over_3_5:{yes:28,no:72,recommendation:"NO"},btts:{yes:68,no:32,recommendation:"YES"}},correct_score:[["1-1",14.8],["2-1",11.2],["1-2",10.4],["2-2",8.1],["1-0",9.3],["0-1",8.7]]}},
+    {home_team:"Liverpool",away_team:"Chelsea",league:"Premier League GW36",date:"2026-05-09 07:30",intel:"💀 Chelsea: 5 straight defeats without scoring (worst since 1912). Rosenior sacked.",prediction:"Home Win",confidence:91,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":91,"Draw":6,"Away Win":3},goals:{predicted_home_goals:2.2,predicted_away_goals:0.4,predicted_total:2.6,markets:{over_1_5:{yes:89,no:11,recommendation:"YES"},over_2_5:{yes:55,no:45,recommendation:"YES"},over_3_5:{yes:22,no:78,recommendation:"NO"},btts:{yes:22,no:78,recommendation:"NO"}},correct_score:[["2-0",17.4],["3-0",12.1],["2-1",10.8],["1-0",10.2],["3-1",8.4],["4-0",5.9]]}},
+    {home_team:"Aston Villa",away_team:"Tottenham",league:"Premier League GW35",date:"2026-05-03 14:00",intel:"📈 Villa 8-game winning run. Spurs 17th chaos — 3 managers this season. De Zerbi just arrived.",prediction:"Home Win",confidence:98,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":98,"Draw":1,"Away Win":1},goals:{predicted_home_goals:2.4,predicted_away_goals:0.8,predicted_total:3.2,markets:{over_1_5:{yes:93,no:7,recommendation:"YES"},over_2_5:{yes:72,no:28,recommendation:"YES"},over_3_5:{yes:38,no:62,recommendation:"NO"},btts:{yes:41,no:59,recommendation:"NO"}},correct_score:[["2-0",15.2],["3-0",13.8],["3-1",11.4],["2-1",10.9],["4-0",7.2],["4-1",5.8]]}},
+  ],
+  nba:[
+    {home_team:"Detroit Pistons",away_team:"Orlando Magic",league:"NBA Playoffs R1 — G5",date:"2026-04-29 19:00",intel:"🪄 Magic lead 3-1. Cade avg 98pts. Magic elite D ending Pistons upset.",prediction:"Away Win",confidence:74,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":26,"Away Win":74}},
+    {home_team:"Boston Celtics",away_team:"Philadelphia 76ers",league:"NBA Playoffs R1 — G6",date:"2026-04-30 19:00",intel:"☘️ Celtics lead 3-2. Embiid returned from surgery — Celtics still won 128-96.",prediction:"Home Win",confidence:94,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":94,"Away Win":6}},
+    {home_team:"Denver Nuggets",away_team:"Minnesota Timberwolves",league:"NBA Playoffs R1 — G6",date:"2026-04-30 21:30",intel:"🦴 Edwards HYPEREXTENDED KNEE + bone bruise. Jokic triple-double in G5.",prediction:"Home Win",confidence:97,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":97,"Away Win":3}},
+    {home_team:"Los Angeles Lakers",away_team:"Houston Rockets",league:"NBA Playoffs R1 — G6",date:"2026-04-30 22:00",intel:"🏥 Durant + Doncic + Reaves ALL injured for Rockets. LeBron 13 assists in G1.",prediction:"Home Win",confidence:97,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":97,"Away Win":3}},
+    {home_team:"New York Knicks",away_team:"Atlanta Hawks",league:"NBA Playoffs R1 — G6",date:"2026-04-30 19:30",intel:"🗽 Knicks lead 3-2 after G5 blowout 126-97. MSG crowd will be electric.",prediction:"Home Win",confidence:96,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":96,"Away Win":4}},
+  ],
+  nfl:[
+    {home_team:"Kansas City Chiefs",away_team:"Baltimore Ravens",league:"NFL 2026 Season Opener",date:"2026-09-10 20:20",intel:"🏆 Chiefs 3-peat attempt. Mahomes vs Lamar. AFC Championship preview.",prediction:"Home Win",confidence:61,bet_value:"MODERATE",bet_color:"yellow",probs:{"Home Win":61,"Draw":2,"Away Win":37}},
+    {home_team:"Philadelphia Eagles",away_team:"Dallas Cowboys",league:"NFL 2026 Season Opener",date:"2026-09-13 16:25",intel:"🦅 Eagles won NFC East. Classic blood rivalry at home.",prediction:"Home Win",confidence:67,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":67,"Draw":1,"Away Win":32}},
+    {home_team:"San Francisco 49ers",away_team:"LA Rams",league:"NFL 2026 Season Opener",date:"2026-09-13 16:25",intel:"🌉 NFC West. Stafford vs Purdy. 49ers bounce back year.",prediction:"Home Win",confidence:62,bet_value:"MODERATE",bet_color:"yellow",probs:{"Home Win":62,"Draw":2,"Away Win":36}},
+  ],
+  tennis:[
+    {home_team:"Jannik Sinner (#1)",away_team:"Alexander Zverev (#3)",league:"Madrid Open SF — Clay",date:"2026-05-02 14:00",intel:"🔥 Sinner unbeaten in Masters 1000 since Shanghai — dropped ONE SET. Zverev always loses to top-2 at SF.",prediction:"Home Win",confidence:84,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":84,"Away Win":16}},
+    {home_team:"Carlos Alcaraz (#2)",away_team:"Alex de Minaur (#9)",league:"Madrid Open SF — Clay",date:"2026-05-02 16:00",intel:"🇪🇸 Alcaraz HOME SOIL. Massive crowd. De Minaur surprise of tournament.",prediction:"Home Win",confidence:73,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":73,"Away Win":27}},
+    {home_team:"Jannik Sinner (#1)",away_team:"Carlos Alcaraz (#2)",league:"Madrid Open Final — Clay",date:"2026-05-03 17:00",intel:"👑 THE MATCH. Sinner beat Alcaraz in Barcelona. But Alcaraz on HOME SOIL. Coin flip.",prediction:"Home Win",confidence:50,bet_value:"LOW VALUE",bet_color:"red",probs:{"Home Win":50,"Away Win":50}},
+    {home_team:"Sinner/Alcaraz Winner",away_team:"Casper Ruud (#7)",league:"Rome Masters Preview",date:"2026-05-10 14:00",intel:"🇮🇹 Ruud won Rome 2020. Madrid winner arrives with momentum. RG prep.",prediction:"Home Win",confidence:83,bet_value:"HIGH VALUE",bet_color:"green",probs:{"Home Win":83,"Away Win":17}},
+  ]
 };
 
-const SPORT_META = {
-  soccer: { label: "Soccer", icon: "⚽", count: 5 },
-  nba:    { label: "NBA",    icon: "🏀", count: 5 },
-  nfl:    { label: "NFL",    icon: "🏈", count: 3 },
-  tennis: { label: "Tennis", icon: "🎾", count: 4 },
-};
+const SPORT_META={soccer:{label:"Soccer",icon:"⚽",ctx:"⚡ PREMIER LEAGUE TITLE RACE — Man City trail Arsenal by 3pts with a game in hand. 5 games left."},nba:{label:"NBA",icon:"🏀",ctx:"🏆 NBA PLAYOFFS 2026 R1 — OKC & Spurs advanced. Multiple series at Game 5/6 elimination."},nfl:{label:"NFL",icon:"🏈",ctx:"🏈 NFL 2026 SEASON PREVIEW — Chiefs chasing 3-peat. Key opener matchups (Sep 2026)."},tennis:{label:"Tennis",icon:"🎾",ctx:"🎾 MADRID OPEN ONGOING (Apr 21–May 3) — Sinner vs Alcaraz final anticipated. Rome starts May 6."}};
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-function el(tag, props={}, ...children) {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') e.className = v;
-    else if (k === 'style') Object.assign(e.style, v);
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
-    else e.setAttribute(k, v);
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+function el(tag,props={},...kids){
+  const e=document.createElement(tag);
+  for(const[k,v]of Object.entries(props)){
+    if(k==='class')e.className=v;
+    else if(k==='style')Object.assign(e.style,v);
+    else if(k.startsWith('on'))e.addEventListener(k.slice(2).toLowerCase(),v);
+    else e.setAttribute(k,v);
   }
-  for (const c of children) {
-    if (c == null) continue;
-    e.append(typeof c === 'string' ? document.createTextNode(c) : c);
-  }
+  for(const c of kids){if(c==null)continue;e.append(typeof c==='string'?document.createTextNode(c):c);}
   return e;
 }
-function html(str) { const d = document.createElement('div'); d.innerHTML = str; return d.firstChild; }
+function html(s){const d=document.createElement('div');d.innerHTML=s;return d.firstChild;}
 
-// ─── CONFIDENCE RING ──────────────────────────────────────────────────────────
-function ConfidenceRing(pct) {
-  const r = 20, circ = 2 * Math.PI * r;
-  const dashOffset = circ - (pct / 100) * circ;
-  const color = pct >= 65 ? '#00F5A0' : pct >= 50 ? '#FFD166' : '#FF4D6D';
-  return html(`
-    <div class="confidence-ring">
-      <svg width="52" height="52" viewBox="0 0 52 52">
-        <circle cx="26" cy="26" r="${r}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="3"/>
-        <circle cx="26" cy="26" r="${r}" fill="none" stroke="${color}" stroke-width="3"
-          stroke-dasharray="${circ}" stroke-dashoffset="${dashOffset}"
-          stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:50% 50%"/>
-      </svg>
-      <div class="confidence-text">${pct}%</div>
-    </div>
-  `);
+function Ring(pct){
+  const r=20,circ=2*Math.PI*r,off=circ-(pct/100)*circ;
+  const col=pct>=65?'#00F5A0':pct>=50?'#FFD166':'#FF4D6D';
+  return html(`<div class="ring"><svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="${r}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="3"/><circle cx="26" cy="26" r="${r}" fill="none" stroke="${col}" stroke-width="3" stroke-dasharray="${circ}" stroke-dashoffset="${off}" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:50% 50%"/></svg><div class="ring-txt">${pct}%</div></div>`);
 }
 
-// ─── PREDICTION CARD ──────────────────────────────────────────────────────────
-function PredCard(p, idx) {
-  const card = el('div', { class: 'pred-card', style: { animationDelay: `${idx * 70}ms` } });
+function GoalsSection(g){
+  if(!g) return null;
+  const sec=el('div',{class:'goals-section'});
+  sec.append(el('div',{class:'goals-title'},'⚽ GOAL MARKETS'));
 
-  const header = el('div', { class: 'card-header' },
-    el('span', { class: 'card-league' }, p.league || ''),
-    el('span', { class: 'card-date' }, p.date || '')
+  const scoreStr=`${g.predicted_home_goals} — ${g.predicted_away_goals}`;
+  const scoreSum=el('div',{style:{display:'flex',gap:'16px',marginBottom:'10px',alignItems:'center'}},
+    el('div',{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:'18px',fontWeight:'700',color:'var(--ac4)'}},scoreStr),
+    el('div',{style:{fontSize:'11px',color:'var(--mu2)'}},`Predicted score · Total: ${g.predicted_total}`)
   );
+  sec.append(scoreSum);
 
-  const matchup = el('div', { class: 'matchup' },
-    el('div', { class: 'team' },
-      el('div', { class: 'team-name' }, p.home_team),
-      el('div', { class: 'team-sub' }, 'HOME')
-    ),
-    el('div', { class: 'vs' }, 'VS'),
-    el('div', { class: 'team' },
-      el('div', { class: 'team-name' }, p.away_team),
-      el('div', { class: 'team-sub' }, 'AWAY')
-    )
-  );
-
-  // Intel box
-  const intel = el('div', { class: 'intel-box' },
-    el('span', { class: 'intel-icon' }, '📡'),
-    el('span', { class: 'intel-text' }, p.intel || '')
-  );
-
-  // Probability bars
-  const barColors = ['#00F5A0', '#FFD166', '#FF4D6D'];
-  const probBars = el('div', { class: 'prob-section' });
-  Object.entries(p.probs || {}).forEach(([label, val], i) => {
-    if (val === 0) return;
-    const row = el('div', { class: 'prob-row' },
-      el('span', { class: 'prob-label' }, label),
-      el('div', { class: 'prob-bar-bg' },
-        el('div', { class: 'prob-bar-fill', style: { width: `${val}%`, background: barColors[i] || barColors[0] } })
-      ),
-      el('span', { class: 'prob-val', style: { color: barColors[i] || barColors[0] } }, `${val}%`)
+  const mGrid=el('div',{class:'goals-grid'});
+  const markets=[
+    ['Over 1.5',g.markets?.over_1_5],
+    ['Over 2.5',g.markets?.over_2_5],
+    ['Over 3.5',g.markets?.over_3_5],
+    ['BTTS',g.markets?.btts],
+  ];
+  markets.forEach(([name,m])=>{
+    if(!m) return;
+    const item=el('div',{class:'market-item'});
+    item.append(el('div',{class:'market-name'},name));
+    const bars=el('div',{class:'market-bars'});
+    const yesColor='#00F5A0', noColor='#FF4D6D';
+    const yRow=el('div',{class:'mbar-row'},
+      el('span',{class:'mbar-lbl'},'YES'),
+      el('div',{class:'mbar-bg'},el('div',{class:'mbar-fill',style:{width:`${m.yes}%`,background:yesColor}})),
+      el('span',{class:'mbar-val',style:{color:yesColor}},`${m.yes}%`)
     );
-    probBars.append(row);
+    const nRow=el('div',{class:'mbar-row'},
+      el('span',{class:'mbar-lbl'},'NO'),
+      el('div',{class:'mbar-bg'},el('div',{class:'mbar-fill',style:{width:`${m.no}%`,background:noColor}})),
+      el('span',{class:'mbar-val',style:{color:noColor}},`${m.no}%`)
+    );
+    bars.append(yRow,nRow);
+    const rec=m.recommendation==='YES'?'rec-yes':'rec-no';
+    item.append(bars,el('div',{class:`market-rec ${rec}`},m.recommendation==='YES'?'✅':'❌',` ${m.recommendation}`));
+    mGrid.append(item);
+  });
+  sec.append(mGrid);
+
+  if(g.correct_score?.length){
+    const st=el('div',{class:'score-table'});
+    st.append(el('div',{class:'score-table-title'},'TOP CORRECT SCORE PICKS'));
+    const chips=el('div',{class:'score-chips'});
+    g.correct_score.forEach(([sc,pct],i)=>{
+      chips.append(el('div',{class:`score-chip${i===0?' top':''}`},`${sc} (${pct}%)`));
+    });
+    st.append(chips);
+    sec.append(st);
+  }
+  return sec;
+}
+
+function PredCard(p,idx){
+  const card=el('div',{class:'card',style:{animationDelay:`${idx*60}ms`}});
+  const hdr=el('div',{class:'card-hdr'},
+    el('span',{class:'card-league'},p.league||''),
+    el('span',{class:'card-date'},p.date||'')
+  );
+  const matchup=el('div',{class:'matchup'},
+    el('div',{class:'team'},el('div',{class:'team-name'},p.home_team),el('div',{class:'team-sub'},'HOME')),
+    el('div',{class:'vs'},'VS'),
+    el('div',{class:'team'},el('div',{class:'team-name'},p.away_team),el('div',{class:'team-sub'},'AWAY'))
+  );
+  const intel=p.intel?el('div',{class:'intel'},el('span',{class:'intel-ico'},'📡'),el('span',{class:'intel-txt'},p.intel)):null;
+
+  const barColors=['#00F5A0','#FFD166','#FF4D6D'];
+  const probs=el('div',{class:'probs'});
+  Object.entries(p.probs||{}).filter(([,v])=>v>0).forEach(([lbl,val],i)=>{
+    probs.append(el('div',{class:'prob-row'},
+      el('span',{class:'prob-lbl'},lbl),
+      el('div',{class:'prob-bg'},el('div',{class:'prob-fill',style:{width:`${val}%`,background:barColors[i]||barColors[0]}})),
+      el('span',{class:'prob-val',style:{color:barColors[i]||barColors[0]}},`${val}%`)
+    ));
   });
 
-  const predBox = el('div', { class: 'prediction-box' },
-    el('div', { class: 'pred-result' },
-      el('div', { class: 'pred-label' }, 'AI Prediction'),
-      el('div', { class: 'pred-value' }, p.prediction || '—')
-    ),
-    ConfidenceRing(p.confidence || 0)
+  const predBox=el('div',{class:'pred-box'},
+    el('div',{class:'pred-res'},el('div',{class:'pred-lbl'},'AI Prediction'),el('div',{class:'pred-val'},p.prediction||'—')),
+    Ring(p.confidence||0)
   );
 
-  const body = el('div', { class: 'card-body' });
-  body.append(matchup, intel, probBars, predBox);
+  const body=el('div',{class:'card-body'});
+  body.append(matchup);
+  if(intel) body.append(intel);
+  body.append(probs,predBox);
 
-  const footer = el('div', { class: 'card-footer' },
-    el('div', { class: `bet-badge ${p.bet_color || 'yellow'}` },
-      p.bet_color === 'green' ? '🔥' : p.bet_color === 'red' ? '⚠️' : '📊',
-      ` ${p.bet_value || 'MODERATE'}`
-    ),
-    el('div', { class: 'model-acc' }, '~71% Model Accuracy')
+  // Goals section (soccer only)
+  if(p.goals){
+    const gs=GoalsSection(p.goals);
+    if(gs) body.append(gs);
+  }
+
+  const col=p.bet_color||'yellow';
+  const ft=el('div',{class:'card-ft'},
+    el('div',{class:`bet-badge bet-${col}`},col==='green'?'🔥':col==='red'?'⚠️':'📊',` ${p.bet_value||'MODERATE'}`),
+    el('div',{class:'model-acc'},'~71% Model Accuracy')
   );
 
-  card.append(header, body, footer);
+  card.append(hdr,body,ft);
   return card;
 }
 
-// ─── CUSTOM PREDICT ────────────────────────────────────────────────────────────
-function CustomPredict(getActiveSport) {
-  const section = el('div', { class: 'custom-section' });
-  section.append(
-    el('div', { class: 'section-header' },
-      el('div', { class: 'section-title' }, '⚡ CUSTOM ', el('span', { class: 'hl' }, 'PREDICTION'))
-    )
-  );
-  const form = el('div', { class: 'form-grid' });
-  const fields = [
-    ['home_team','Home Team / Player','text','e.g. Liverpool'],
-    ['away_team','Away Team / Player','text','e.g. Chelsea'],
-    ['home_form','Home Form (0-1)','number','0.70'],
-    ['away_form','Away Form (0-1)','number','0.45'],
-    ['h2h','H2H Ratio (0-1)','number','0.55'],
-    ['rank_diff','Rank Difference','number','5'],
-  ];
-  const inputs = {};
-  fields.forEach(([name,label,type,ph]) => {
-    const g = el('div', {class:'form-group'},
-      el('label',{class:'form-label'},label),
-      el('input',{class:'form-input',type,placeholder:ph,name,value:ph})
-    );
-    form.append(g);
-    inputs[name] = g.querySelector('input');
-  });
-
-  const resultDiv = el('div');
-  const btn = el('button',{class:'predict-btn', onClick: async () => {
-    btn.disabled = true; btn.textContent = 'Analyzing...';
-    resultDiv.innerHTML = '';
-    const sport = getActiveSport();
-    const payload = {
-      home_team: inputs.home_team.value || 'Home Team',
-      away_team: inputs.away_team.value || 'Away Team',
-      home_form: parseFloat(inputs.home_form.value)||0.6,
-      away_form: parseFloat(inputs.away_form.value)||0.5,
-      h2h: parseFloat(inputs.h2h.value)||0.5,
-      rank_diff: parseFloat(inputs.rank_diff.value)||0,
-    };
-    let result;
-    try {
-      const res = await fetch(`${API_BASE}/${sport}/predict`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload),
-      });
-      result = await res.json();
-    } catch {
-      const conf = Math.round(48 + Math.random()*40);
-      const homeAdv = parseFloat(inputs.home_form.value) > parseFloat(inputs.away_form.value);
-      result = {
-        prediction: conf > 55 ? (homeAdv ? 'Home Win' : 'Away Win') : 'Draw',
-        confidence: conf,
-        probabilities: {home_win: conf, draw: 15, away_win: 100-conf-15},
-        bet_value: conf>65?'HIGH VALUE':conf>50?'MODERATE':'LOW VALUE',
-        bet_value_color: conf>65?'green':conf>50?'yellow':'red',
-        model_accuracy: 71.0,
-      };
-    }
-    resultDiv.innerHTML = '';
-    void resultDiv.offsetWidth;
-    resultDiv.className = 'custom-result';
-    const probs = result.probabilities||{};
-    const probHTML = Object.entries(probs).filter(([,v])=>v>0).map(([k,v]) =>
-      `<div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="color:var(--muted2);font-size:11px;text-transform:uppercase">${k.replace('_',' ')}</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--accent)">${v}%</span>
-      </div>`
-    ).join('');
-    resultDiv.innerHTML = `
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:14px;color:var(--accent)">
-        ${payload.home_team} vs ${payload.away_team}
-      </div>
-      <div class="result-grid">
-        <div class="result-item"><div class="result-num">${result.prediction}</div><div class="result-lbl">Prediction</div></div>
-        <div class="result-item"><div class="result-num">${result.confidence}%</div><div class="result-lbl">Confidence</div></div>
-        <div class="result-item"><div class="result-num">${result.model_accuracy||71}%</div><div class="result-lbl">Model Acc</div></div>
-      </div>
-      <div style="margin-top:16px">${probHTML}</div>
-      <div class="bet-badge ${result.bet_value_color||'yellow'}" style="margin-top:10px">
-        ${result.bet_value_color==='green'?'🔥':result.bet_value_color==='red'?'⚠️':'📊'} ${result.bet_value||'MODERATE'}
-      </div>
-    `;
-    btn.disabled = false; btn.textContent = 'RUN PREDICTION';
-  }}, 'RUN PREDICTION');
-
-  section.append(form, btn, resultDiv);
-  return section;
+// ─── FETCH FROM BACKEND ──────────────────────────────────────────────────────
+async function fetchPredictions(sport){
+  try{
+    const r=await fetch(`${API_BASE}/${sport}/predict/auto`,{signal:AbortSignal.timeout(8000)});
+    const d=await r.json();
+    return{preds:d.predictions||[],source:d.source||'live',count:d.count||0};
+  }catch{
+    const fb=FALLBACK[sport]||[];
+    return{preds:fb,source:'curated',count:fb.length};
+  }
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-function init() {
-  const root = document.getElementById('root');
-  let activeSport = 'soccer';
+// ─── INIT ────────────────────────────────────────────────────────────────────
+function init(){
+  const root=document.getElementById('root');
+  let activeSport='soccer';
+  let srcBadge;
 
-  const header = html(`
-    <header>
-      <div class="logo">
-        <div class="logo-icon">🤖</div>
-        <div class="logo-text">SportsBet AI</div>
-      </div>
-      <div class="header-right">
-        <div class="date-badge">📅 ${TODAY} — Live Data</div>
-        <div class="live-badge"><div class="live-dot"></div>PREDICTIONS LIVE</div>
-      </div>
-    </header>
-  `);
-
-  // Ticker
-  const ticker = html(`
-    <div class="alert-ticker">
-      <div class="ticker-label">📡 Breaking</div>
-      <div class="ticker-scroll">
-        <span class="ticker-item">🔥 <span>Man City</span> game in hand vs Arsenal — win sends them top of PL&nbsp;&nbsp;</span>
-        <span class="ticker-item">🏥 <span>Anthony Edwards</span> knee injury — Nuggets massive betting edge vs Wolves&nbsp;&nbsp;</span>
-        <span class="ticker-item">💀 <span>Chelsea</span> 5 straight defeats without scoring — worst run since 1912&nbsp;&nbsp;</span>
-        <span class="ticker-item">🎾 <span>Sinner vs Alcaraz</span> Madrid Final anticipated Sunday — biggest tennis match of 2026&nbsp;&nbsp;</span>
-        <span class="ticker-item">📊 <span>Durant + Doncic + Reaves</span> ALL injured for Rockets vs Lakers — series almost over&nbsp;&nbsp;</span>
-        <span class="ticker-item">🔥 <span>Man City</span> game in hand vs Arsenal — win sends them top of PL&nbsp;&nbsp;</span>
-        <span class="ticker-item">🏥 <span>Anthony Edwards</span> knee injury — Nuggets massive betting edge vs Wolves&nbsp;&nbsp;</span>
-        <span class="ticker-item">💀 <span>Chelsea</span> 5 straight defeats without scoring — worst run since 1912&nbsp;&nbsp;</span>
-        <span class="ticker-item">🎾 <span>Sinner vs Alcaraz</span> Madrid Final anticipated Sunday — biggest tennis match of 2026&nbsp;&nbsp;</span>
-        <span class="ticker-item">📊 <span>Durant + Doncic + Reaves</span> ALL injured for Rockets vs Lakers — series almost over&nbsp;&nbsp;</span>
-      </div>
+  const header=html(`<header>
+    <div class="logo"><div class="logo-icon">🤖</div><div class="logo-text">SportsBet AI</div></div>
+    <div class="hdr-right">
+      <div id="src-badge" class="src-badge src-curated">⏳ Loading...</div>
+      <div class="live-badge"><div class="live-dot"></div>LIVE PREDICTIONS</div>
     </div>
-  `);
+  </header>`);
 
-  const statsBar = html(`
-    <div class="stats-bar">
-      <div class="stat-item"><div class="stat-num">17</div><div class="stat-label">Live Predictions</div></div>
-      <div class="stat-item"><div class="stat-num">~71%</div><div class="stat-label">Model Accuracy</div></div>
-      <div class="stat-item"><div class="stat-num">4</div><div class="stat-label">Sports Covered</div></div>
-      <div class="stat-item"><div class="stat-num">12</div><div class="stat-label">High Value Picks</div></div>
-      <div class="stat-item"><div class="stat-num">Apr 29</div><div class="stat-label">Data Updated</div></div>
+  const ticker=html(`<div class="ticker">
+    <div class="ticker-lbl">📡 Breaking</div>
+    <div class="ticker-scroll">
+      <span class="ti">🔥 <span>Man City</span> game in hand — win sends them top of PL&nbsp;&nbsp;</span>
+      <span class="ti">🏥 <span>Anthony Edwards</span> knee injury — Nuggets massive edge vs Wolves&nbsp;&nbsp;</span>
+      <span class="ti">💀 <span>Chelsea</span> 5 straight defeats without scoring — worst since 1912&nbsp;&nbsp;</span>
+      <span class="ti">🎾 <span>Sinner vs Alcaraz</span> Madrid Final — biggest tennis match of 2026&nbsp;&nbsp;</span>
+      <span class="ti">📊 <span>Durant + Doncic + Reaves</span> ALL injured for Rockets vs Lakers&nbsp;&nbsp;</span>
+      <span class="ti">📈 <span>Aston Villa</span> on league's longest winning run — 8 games straight&nbsp;&nbsp;</span>
+      <span class="ti">🔥 <span>Man City</span> game in hand — win sends them top of PL&nbsp;&nbsp;</span>
+      <span class="ti">🏥 <span>Anthony Edwards</span> knee injury — Nuggets massive edge vs Wolves&nbsp;&nbsp;</span>
+      <span class="ti">💀 <span>Chelsea</span> 5 straight defeats without scoring — worst since 1912&nbsp;&nbsp;</span>
+      <span class="ti">🎾 <span>Sinner vs Alcaraz</span> Madrid Final — biggest tennis match of 2026&nbsp;&nbsp;</span>
+      <span class="ti">📊 <span>Durant + Doncic + Reaves</span> ALL injured for Rockets vs Lakers&nbsp;&nbsp;</span>
+      <span class="ti">📈 <span>Aston Villa</span> on league's longest winning run — 8 games straight&nbsp;&nbsp;</span>
     </div>
-  `);
+  </div>`);
 
-  const main = el('main');
+  const statsBar=html(`<div class="stats-bar">
+    <div class="stat"><div class="stat-n" id="stat-count">—</div><div class="stat-l">Live Predictions</div></div>
+    <div class="stat"><div class="stat-n">~71%</div><div class="stat-l">Model Accuracy</div></div>
+    <div class="stat"><div class="stat-n">4</div><div class="stat-l">Sports</div></div>
+    <div class="stat"><div class="stat-n">8</div><div class="stat-l">Leagues Tracked</div></div>
+    <div class="stat"><div class="stat-n" id="stat-date">${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}</div><div class="stat-l">Live Data</div></div>
+  </div>`);
 
-  // Tabs
-  const tabs = el('div', {class:'tabs'});
-  const tabBtns = {};
-  Object.entries(SPORT_META).forEach(([sport, meta]) => {
-    const btn = el('button', {
-      class: `tab${sport===activeSport?' active':''}`,
-      onClick: () => switchSport(sport)
-    },
-      el('span',{},(meta.icon+' '+meta.label)),
-      el('span',{class:'tab-badge'},String(meta.count))
+  const main=el('main');
+
+  const tabs=el('div',{class:'tabs'});
+  const tabBtns={};
+  Object.entries(SPORT_META).forEach(([sport,meta])=>{
+    const n=(FALLBACK[sport]||[]).length;
+    const btn=el('button',{class:`tab${sport===activeSport?' active':''}`,onClick:()=>switchSport(sport)},
+      `${meta.icon} ${meta.label}`,el('span',{class:'tab-n'},String(n)+'+')
     );
-    tabBtns[sport] = btn;
+    tabBtns[sport]=btn;
     tabs.append(btn);
   });
 
-  const contextBar = el('div', {
-    style: {
-      background: 'rgba(0,245,160,0.04)',
-      border: '1px solid rgba(0,245,160,0.12)',
-      borderRadius: '10px',
-      padding: '12px 18px',
-      marginBottom: '18px',
-      fontSize: '12px',
-      color: 'var(--muted2)',
-      lineHeight: '1.5'
-    }
-  });
-
-  const sectionHdr = el('div',{class:'section-header'},
-    el('div',{class:'section-title'},'UPCOMING ', el('span',{class:'hl'},'FIXTURES')),
-    el('div',{class:'updated-label'}, el('div',{class:'updated-dot'}), 'Updated Apr 29, 2026')
+  const ctxBar=el('div',{class:'ctx-bar'});
+  const secHdr=el('div',{class:'sec-hdr'},
+    el('div',{class:'sec-title'},'LIVE ',el('span',{class:'hl'},'FIXTURES & PREDICTIONS')),
+    el('div',{class:'upd'},el('div',{class:'upd-dot'}),'Auto-refreshes on load')
   );
+  const grid=el('div',{class:'grid'});
 
-  const cardsGrid = el('div',{class:'cards-grid'});
-  const loadingEl = el('div',{class:'loading'}, el('div',{class:'spinner'}), el('div',{class:'loading-text'},'LOADING LIVE DATA...'));
-  cardsGrid.append(loadingEl);
+  main.append(tabs,ctxBar,secHdr,grid);
 
-  const customSection = CustomPredict(() => activeSport);
-  main.append(tabs, contextBar, sectionHdr, cardsGrid, customSection);
+  const footer=html(`<footer>
+    <div class="disclaimer">⚠️ For entertainment only. Gamble responsibly. 18+ only. Past performance ≠ future results.</div>
+    <div>SportsBet AI © 2026 — Live fixtures · AI predictions · Goal markets</div>
+  </footer>`);
 
-  const footer = html(`
-    <footer>
-      <div class="disclaimer">⚠️ For entertainment purposes only. Always gamble responsibly. 18+ only. Past performance does not guarantee future results.</div>
-      <div>SportsBet AI © 2026 — Real fixtures, insider context, AI-powered predictions</div>
-    </footer>
-  `);
+  root.append(header,ticker,statsBar,main,footer);
+  srcBadge=document.getElementById('src-badge');
 
-  root.append(header, ticker, statsBar, main, footer);
+  async function switchSport(sport){
+    activeSport=sport;
+    Object.entries(tabBtns).forEach(([s,b])=>b.className=`tab${s===sport?' active':''}`);
+    ctxBar.textContent=SPORT_META[sport]?.ctx||'';
+    grid.innerHTML='';
+    grid.append(html(`<div class="loading"><div class="spinner"></div><div class="loading-txt">FETCHING LIVE DATA...</div></div>`));
 
-  function switchSport(sport) {
-    activeSport = sport;
-    Object.entries(tabBtns).forEach(([s,btn]) => {
-      btn.className = `tab${s===sport?' active':''}`;
-    });
+    const{preds,source,count}=await fetchPredictions(sport);
 
-    const data = REAL_DATA[sport];
-    contextBar.textContent = '';
-    contextBar.append(document.createTextNode(data.context_header || ''));
+    // Update source badge
+    srcBadge.className=`src-badge ${source==='live'?'src-live':'src-curated'}`;
+    srcBadge.textContent=source==='live'?'🟢 LIVE DATA':'📋 CURATED DATA';
+    document.getElementById('stat-count').textContent=count||preds.length;
 
-    cardsGrid.innerHTML = '';
-    const loadEl = el('div',{class:'loading'}, el('div',{class:'spinner'}), el('div',{class:'loading-text'},'LOADING...'));
-    cardsGrid.append(loadEl);
+    // Update tab badge
+    if(tabBtns[sport]) tabBtns[sport].querySelector('.tab-n').textContent=String(preds.length);
 
-    // Attempt to fetch from live backend, fall back to real mock data
-    fetch(`${API_BASE}/${sport}/predict/auto`)
-      .then(r => r.json())
-      .then(d => {
-        cardsGrid.innerHTML = '';
-        (d.predictions || []).forEach((p,i) => {
-          // Enrich with intel from local data
-          const local = (data.fixtures||[])[i];
-          if (local) { p.intel = local.intel; p.probs = local.probs; }
-          cardsGrid.append(PredCard(p, i));
-        });
-      })
-      .catch(() => {
-        cardsGrid.innerHTML = '';
-        (data.fixtures || []).forEach((f,i) => cardsGrid.append(PredCard(f,i)));
-      });
+    grid.innerHTML='';
+    if(!preds.length){
+      grid.append(el('div',{style:{color:'var(--mu2)',padding:'60px',textAlign:'center',gridColumn:'1/-1'}},'No fixtures available right now. Check back soon.'));
+      return;
+    }
+    preds.forEach((p,i)=>grid.append(PredCard(p,i)));
   }
 
   switchSport('soccer');
