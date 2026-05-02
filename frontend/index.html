@@ -239,16 +239,6 @@ const FALLBACK = {
 const HISTORY_TAB=true;
 const SPORT_META={soccer:{label:"Soccer",icon:"⚽",ctx:"⚡ PREMIER LEAGUE TITLE RACE — Man City trail Arsenal by 3pts with a game in hand. 5 games left."},nba:{label:"NBA",icon:"🏀",ctx:"🏆 NBA PLAYOFFS 2026 R1 — OKC & Spurs advanced. Multiple series at Game 5/6 elimination."},nfl:{label:"NFL",icon:"🏈",ctx:"🏈 NFL 2026 SEASON PREVIEW — Chiefs chasing 3-peat. Key opener matchups (Sep 2026)."},tennis:{label:"Tennis",icon:"🎾",ctx:"🎾 MADRID OPEN ONGOING (Apr 21–May 3) — Sinner vs Alcaraz final anticipated. Rome starts May 6."}};
 
-async function loadFixtures() {
-  try {
-    const res = await fetch(`${API_BASE}/soccer/fixtures`);
-    const data = await res.json();
-    // Render data.fixtures instead of FALLBACK.soccer
-  } catch (err) {
-    console.error(err);
-    // Show error message to user
-  }
-}
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 function el(tag,props={},...kids){
   const e=document.createElement(tag);
