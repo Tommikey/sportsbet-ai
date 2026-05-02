@@ -273,10 +273,10 @@ function GoalsSection(g){
 
   const mGrid=el('div',{class:'goals-grid'});
   const markets=[
-    ['Over 1.5',g.markets && g.markets.over_1_5],
-    ['Over 2.5',g.markets && g.markets.over_2_5],
-    ['Over 3.5',g.markets && g.markets.over_3_5],
-    ['BTTS',g.markets && g.markets.btts],
+    ['Over 1.5',g.markets?.over_1_5],
+    ['Over 2.5',g.markets?.over_2_5],
+    ['Over 3.5',g.markets?.over_3_5],
+    ['BTTS',g.markets?.btts],
   ];
   markets.forEach(([name,m])=>{
     if(!m) return;
@@ -301,7 +301,7 @@ function GoalsSection(g){
   });
   sec.append(mGrid);
 
-  if(g.correct_score && g.correct_score.length){
+  if(g.correct_score?.length){
     const st=el('div',{class:'score-table'});
     st.append(el('div',{class:'score-table-title'},'TOP CORRECT SCORE PICKS'));
     const chips=el('div',{class:'score-chips'});
@@ -366,10 +366,7 @@ function PredCard(p,idx){
 // ─── FETCH FROM BACKEND ──────────────────────────────────────────────────────
 async function fetchPredictions(sport){
   try{
-    const controller=new AbortController();
-      const tid=setTimeout(()=>controller.abort(),8000);
-      const r=await fetch(`${API_BASE}/${sport}/predict/auto`,{signal:controller.signal});
-      clearTimeout(tid);
+    const r=await fetch(`${API_BASE}/${sport}/predict/auto`,{signal:AbortSignal.timeout(8000)});
     const d=await r.json();
     return{preds:d.predictions||[],source:d.source||'live',count:d.count||0};
   }catch{
@@ -391,9 +388,9 @@ async function autoSavePredictions(sport, preds){
       prediction: p.prediction||'Unknown',
       confidence: p.confidence||50,
       bet_value: p.bet_value||'MODERATE',
-      home_win_prob: (p.probs && p.probs['Home Win'])||(p.probabilities && p.probabilities.home_win)||50,
-      draw_prob: (p.probs && p.probs['Draw'])||(p.probabilities && p.probabilities.draw)||0,
-      away_win_prob: (p.probs && p.probs['Away Win'])||(p.probabilities && p.probabilities.away_win)||50,
+      home_win_prob: p.probs?.['Home Win']||p.probabilities?.home_win||50,
+      draw_prob: p.probs?.['Draw']||p.probabilities?.draw||0,
+      away_win_prob: p.probs?.['Away Win']||p.probabilities?.away_win||50,
       intel: p.intel||null,
       goals_data: p.goals||null,
       source: p.source||'curated',
@@ -484,10 +481,10 @@ function init(){
   async function switchSport(sport){
     // Clean up history interval if active
     const existingWrap = grid.querySelector('[data-cleanup]');
-    if(existingWrap && existingWrap._cleanup) existingWrap._cleanup();
+    if(existingWrap?._cleanup) existingWrap._cleanup();
     activeSport=sport;
     Object.entries(tabBtns).forEach(([s,b])=>b.className=`tab${s===sport?' active':''}`);
-    ctxBar.textContent=SPORT_META[sport] && SPORT_META[sport].ctx||'';
+    ctxBar.textContent=SPORT_META[sport]?.ctx||'';
     grid.innerHTML='';
     grid.append(html(`<div class="loading"><div class="spinner"></div><div class="loading-txt">FETCHING LIVE DATA...</div></div>`));
 
@@ -604,9 +601,9 @@ function init(){
     function scoreCell(p){
       const r = p.result;
       if(!r) return el('div',{class:'pending-score'},'⏳ Awaiting kick-off');
-      const scoreStr = (r.home_score!==null&&r.home_score!==undefined&&r.away_score!==null&&r.away_score!==undefined) ? `${r.home_score} — ${r.away_score}` : '? — ?';
+      const scoreStr = (r.home_score!=null&&r.away_score!=null) ? `${r.home_score} — ${r.away_score}` : '? — ?';
       const notes = r.notes||'';
-      const isLive = notes.indexOf('[LIVE]')>-1 || notes.indexOf('[1H]')>-1 || notes.indexOf('[2H]')>-1 || notes.indexOf('[HT]')>-1;
+      const isLive = notes.includes('[LIVE]') || notes.includes('[1H]') || notes.includes('[2H]') || notes.includes('[HT]');
       const isFinal = r.prediction_correct !== null;
       if(isLive && !isFinal){
         const el2=el('div',{class:'live-score'},el('div',{class:'pulse'}),'LIVE ',scoreStr);
@@ -621,7 +618,7 @@ function init(){
     }
 
     function marketsCell(p){
-      if(!p.goals_data && p.goals_data.markets) return el('span',{class:'mkt-pending'},'—');
+      if(!p.goals_data?.markets) return el('span',{class:'mkt-pending'},'—');
       const m = p.goals_data.markets;
       const r = p.result;
       const wrap2 = el('div',{style:{fontSize:'10px',fontFamily:"'JetBrains Mono',monospace",lineHeight:'1.8'}});
@@ -633,9 +630,9 @@ function init(){
       ];
       items.forEach(([name,mkt,actual])=>{
         if(!mkt) return;
-        const rec = mkt && mkt.recommendation;
+        const rec = mkt.recommendation;
         let icon = '';
-        if(r&&r.prediction_correct !== null){
+        if(r&&r.prediction_correct!==null){
           const correct = (rec==='YES') === actual;
           icon = correct ? ' ✅' : ' ❌';
         }
@@ -649,8 +646,8 @@ function init(){
       tbody.innerHTML='';
       const filtered = allPreds.filter(p=>{
         if(activeFilter==='all') return true;
-        if(activeFilter==='✅ correct') return p.result && p.result.prediction_correct===true;
-        if(activeFilter==='❌ wrong')   return p.result && p.result.prediction_correct===false;
+        if(activeFilter==='✅ correct') return p.result?.prediction_correct===true;
+        if(activeFilter==='❌ wrong')   return p.result?.prediction_correct===false;
         if(activeFilter==='⏳ pending') return !p.result;
         return p.sport===activeFilter;
       });
