@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import soccer, nba, nfl, tennis
+from routers import soccer, nba, nfl, tennis, records
+from database import create_tables
 import uvicorn
 
-app = FastAPI(title="SportsBet AI API", version="1.0.0")
+app = FastAPI(title="SportsBet AI API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -13,14 +14,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Create DB tables on startup
+@app.on_event("startup")
+def startup():
+    create_tables()
+
 app.include_router(soccer.router, prefix="/api/soccer", tags=["Soccer"])
 app.include_router(nba.router, prefix="/api/nba", tags=["NBA"])
 app.include_router(nfl.router, prefix="/api/nfl", tags=["NFL"])
 app.include_router(tennis.router, prefix="/api/tennis", tags=["Tennis"])
+app.include_router(records.router, prefix="/api/records", tags=["Records"])
 
 @app.get("/")
 def root():
-    return {"status": "SportsBet AI is running", "version": "1.0.0"}
+    return {"status": "SportsBet AI v2.0 running", "docs": "/docs"}
 
 @app.get("/api/health")
 def health():

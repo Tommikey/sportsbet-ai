@@ -149,6 +149,39 @@ main{padding:28px 32px;max-width:1600px;margin:0 auto}
 footer{border-top:1px solid var(--br);padding:20px 32px;text-align:center;font-size:11px;color:var(--mu)}
 .disclaimer{background:rgba(255,77,109,.05);border:1px solid rgba(255,77,109,.12);border-radius:8px;padding:9px 18px;font-size:10px;color:var(--mu2);margin-bottom:10px;display:inline-block}
 @media(max-width:768px){header{padding:12px 16px}main{padding:16px}stats-bar{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}}
+
+/* HISTORY TAB */
+.history-wrap{display:flex;flex-direction:column;gap:24px}
+.hist-section{background:var(--s1);border:1px solid var(--br);border-radius:16px;overflow:hidden}
+.hist-section-hdr{padding:14px 20px;background:var(--s2);border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between}
+.hist-section-title{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px}
+.hist-section-title .hl{color:var(--ac)}
+.acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:var(--br)}
+.acc-item{background:var(--s1);padding:18px 20px;text-align:center}
+.acc-num{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--ac);line-height:1}
+.acc-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.streak-badge{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--ac4);letter-spacing:1px;padding:8px 20px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.2);border-radius:8px}
+.history-table{width:100%;border-collapse:collapse}
+.history-table th{padding:10px 16px;text-align:left;font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--br);background:var(--s2)}
+.history-table td{padding:12px 16px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.history-table tr:hover td{background:rgba(255,255,255,.02)}
+.score-pill{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px;display:inline-block}
+.score-pill.correct{background:rgba(0,245,160,.12);color:var(--gr);border:1px solid rgba(0,245,160,.25)}
+.score-pill.wrong{background:rgba(255,77,109,.1);color:var(--rd);border:1px solid rgba(255,77,109,.2)}
+.score-pill.pending{background:rgba(255,255,255,.06);color:var(--mu2);border:1px solid var(--br)}
+.sport-tag{font-size:9px;font-weight:800;padding:3px 8px;border-radius:4px;letter-spacing:1px;text-transform:uppercase}
+.sport-soccer{background:rgba(0,245,160,.12);color:var(--gr)}
+.sport-nba{background:rgba(255,107,53,.12);color:var(--ac2)}
+.sport-nfl{background:rgba(108,99,255,.12);color:var(--ac3)}
+.sport-tennis{background:rgba(255,209,102,.12);color:var(--yw)}
+.result-form{display:flex;gap:8px;align-items:center;margin-top:4px}
+.score-inp{width:42px;background:var(--s3);border:1px solid var(--br2);border-radius:6px;padding:5px 8px;color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:13px;text-align:center;outline:none}
+.save-result-btn{background:var(--ac3);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px}
+.save-result-btn:hover{opacity:.85}
+.no-history{padding:60px;text-align:center;color:var(--mu2);font-size:13px}
+.filter-tabs{display:flex;gap:6px;margin-bottom:20px}
+.ftab{padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--mu);border:1px solid var(--br);background:transparent;transition:all .2s}
+.ftab.active,.ftab:hover{color:var(--tx);border-color:rgba(0,245,160,.3);background:rgba(0,245,160,.06)}
 </style>
 </head>
 <body>
@@ -187,6 +220,7 @@ const FALLBACK = {
   ]
 };
 
+const HISTORY_TAB=true;
 const SPORT_META={soccer:{label:"Soccer",icon:"⚽",ctx:"⚡ PREMIER LEAGUE TITLE RACE — Man City trail Arsenal by 3pts with a game in hand. 5 games left."},nba:{label:"NBA",icon:"🏀",ctx:"🏆 NBA PLAYOFFS 2026 R1 — OKC & Spurs advanced. Multiple series at Game 5/6 elimination."},nfl:{label:"NFL",icon:"🏈",ctx:"🏈 NFL 2026 SEASON PREVIEW — Chiefs chasing 3-peat. Key opener matchups (Sep 2026)."},tennis:{label:"Tennis",icon:"🎾",ctx:"🎾 MADRID OPEN ONGOING (Apr 21–May 3) — Sinner vs Alcaraz final anticipated. Rome starts May 6."}};
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
@@ -326,6 +360,33 @@ async function fetchPredictions(sport){
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
+async function autoSavePredictions(sport, preds){
+  if(!preds.length) return;
+  try{
+    const payload={predictions: preds.map(p=>({
+      sport,
+      league: p.league||sport,
+      home_team: p.home_team,
+      away_team: p.away_team,
+      match_date: p.date||'',
+      prediction: p.prediction||'Unknown',
+      confidence: p.confidence||50,
+      bet_value: p.bet_value||'MODERATE',
+      home_win_prob: p.probs?.['Home Win']||p.probabilities?.home_win||50,
+      draw_prob: p.probs?.['Draw']||p.probabilities?.draw||0,
+      away_win_prob: p.probs?.['Away Win']||p.probabilities?.away_win||50,
+      intel: p.intel||null,
+      goals_data: p.goals||null,
+      source: p.source||'curated',
+    }))};
+    await fetch(`${API_BASE}/records/save/bulk`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+  }catch(e){console.log('Auto-save failed (backend offline):', e.message);}
+}
+
 function init(){
   const root=document.getElementById('root');
   let activeSport='soccer';
@@ -377,6 +438,12 @@ function init(){
     tabBtns[sport]=btn;
     tabs.append(btn);
   });
+  // History tab
+  const histBtn=el('button',{class:'tab',onClick:()=>switchToHistory()},
+    '📊 History',el('span',{class:'tab-n'},'ALL')
+  );
+  tabBtns['history']=histBtn;
+  tabs.append(histBtn);
 
   const ctxBar=el('div',{class:'ctx-bar'});
   const secHdr=el('div',{class:'sec-hdr'},
@@ -418,9 +485,192 @@ function init(){
       return;
     }
     preds.forEach((p,i)=>grid.append(PredCard(p,i)));
+    // Auto-save to DB
+    autoSavePredictions(sport, preds);
   }
 
   switchSport('soccer');
+
+  // ─── HISTORY TAB ──────────────────────────────────────────────────────────
+  async function switchToHistory(){
+    // Update tab styles
+    Object.entries(tabBtns).forEach(([s,b])=>b.className=`tab${s==='history'?' active':''}`);
+    ctxBar.textContent='📊 Full prediction history — every game predicted, every result recorded.';
+    grid.innerHTML='';
+    grid.append(html(`<div class="loading"><div class="spinner"></div><div class="loading-txt">LOADING HISTORY...</div></div>`));
+
+    try{
+      const [histRes, accRes, streakRes] = await Promise.all([
+        fetch(`${API_BASE}/records/history?days=60`).then(r=>r.json()),
+        fetch(`${API_BASE}/records/accuracy`).then(r=>r.json()),
+        fetch(`${API_BASE}/records/streak`).then(r=>r.json()),
+      ]);
+      grid.innerHTML='';
+      grid.append(buildHistoryUI(histRes, accRes, streakRes));
+    }catch(e){
+      grid.innerHTML='';
+      grid.append(el('div',{class:'no-history'},'⚠️ Could not load history. Make sure the backend is running.'));
+    }
+  }
+
+  function buildHistoryUI(histData, accData, streakData){
+    const wrap=el('div',{class:'history-wrap',style:{gridColumn:'1/-1'}});
+
+    // ── Accuracy Stats ──
+    const accSec=el('div',{class:'hist-section'});
+    accSec.append(el('div',{class:'hist-section-hdr'},
+      el('div',{class:'hist-section-title'},'MODEL ',el('span',{class:'hl'},'ACCURACY')),
+      el('div',{class:'streak-badge'},`🔥 ${streakData.current_streak} Streak`)
+    ));
+    const overall=accData.overall||{};
+    const accGrid=el('div',{class:'acc-grid'});
+    const accItems=[
+      [overall.total||0,'Total Predictions'],
+      [overall.correct||0,'Correct'],
+      [(overall.accuracy_pct||0)+'%','Overall Accuracy'],
+      [streakData.current_streak||0,'Current Streak'],
+    ];
+    accItems.forEach(([n,l])=>{
+      accGrid.append(el('div',{class:'acc-item'},
+        el('div',{class:'acc-num'},String(n)),
+        el('div',{class:'acc-lbl'},l)
+      ));
+    });
+    // Per sport
+    (accData.by_sport||[]).forEach(s=>{
+      accGrid.append(el('div',{class:'acc-item'},
+        el('div',{class:'acc-num'},s.accuracy_pct+'%'),
+        el('div',{class:'acc-lbl'},s.sport.toUpperCase()+' Acc')
+      ));
+    });
+    accSec.append(accGrid);
+    wrap.append(accSec);
+
+    // ── History Table ──
+    const histSec=el('div',{class:'hist-section'});
+    histSec.append(el('div',{class:'hist-section-hdr'},
+      el('div',{class:'hist-section-title'},'PREDICTION ',el('span',{class:'hl'},'HISTORY')),
+      el('div',{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:'11px',color:'var(--mu2)'}},`${histData.total} records`)
+    ));
+
+    // Filter tabs
+    let activeFilter='all';
+    const filterWrap=el('div',{style:{padding:'16px 20px 0'}});
+    const filterTabs=el('div',{class:'filter-tabs'});
+    const filters=['all','soccer','nba','nfl','tennis','✅ correct','❌ wrong','⏳ pending'];
+    const fBtns={};
+    filters.forEach(f=>{
+      const b=el('button',{class:`ftab${f==='all'?' active':''}`,onClick:()=>{
+        activeFilter=f;
+        Object.values(fBtns).forEach(b=>b.classList.remove('active'));
+        b.classList.add('active');
+        renderRows();
+      }},f);
+      fBtns[f]=b;
+      filterTabs.append(b);
+    });
+    filterWrap.append(filterTabs);
+    histSec.append(filterWrap);
+
+    const tableWrap=el('div',{style:{overflowX:'auto'}});
+    const table=el('table',{class:'history-table'});
+    table.append(el('thead',{},el('tr',{},
+      ..['Date','Sport','Match','Prediction','Confidence','Score / Result','Goals Market','Action'].map(h=>el('th',{},h))
+    )));
+    const tbody=el('tbody');
+    table.append(tbody);
+    tableWrap.append(table);
+    histSec.append(tableWrap);
+    wrap.append(histSec);
+
+    const preds=histData.predictions||[];
+
+    function renderRows(){
+      tbody.innerHTML='';
+      const filtered=preds.filter(p=>{
+        if(activeFilter==='all') return true;
+        if(activeFilter==='✅ correct') return p.result?.prediction_correct===true;
+        if(activeFilter==='❌ wrong') return p.result?.prediction_correct===false;
+        if(activeFilter==='⏳ pending') return !p.result;
+        return p.sport===activeFilter;
+      });
+
+      if(!filtered.length){
+        tbody.append(el('tr',{},el('td',{colspan:'8',style:{textAlign:'center',padding:'40px',color:'var(--mu2)'}},
+          'No records match this filter yet.'
+        )));
+        return;
+      }
+
+      filtered.forEach(p=>{
+        const r=p.result;
+        const scoreStr=r?(r.score||'?-?'):'—';
+        const correct=r?r.prediction_correct:null;
+        const pillClass=correct===true?'correct':correct===false?'wrong':'pending';
+        const pillText=r?`${scoreStr} ${correct?'✅':'❌'}`:'Awaiting result';
+
+        // Goals market summary
+        let goalsStr='—';
+        if(p.goals_data?.markets){
+          const m=p.goals_data.markets;
+          const o25=m.over_2_5?.recommendation;
+          const bt=m.btts?.recommendation;
+          const o25c=r?((p.goals_data.predicted_total>2.5)===(o25==='YES')?'✅':'❌'):'';
+          const btc=r?((r.home_score>=1&&r.away_score>=1)===(bt==='YES')?'✅':'❌'):'';
+          goalsStr=`O2.5:${o25}${o25c} BTTS:${bt}${btc}`;
+        }
+
+        // Result input form
+        const hInp=el('input',{class:'score-inp',type:'number',min:'0',max:'20',placeholder:'H'});
+        const aInp=el('input',{class:'score-inp',type:'number',min:'0',max:'20',placeholder:'A'});
+        const saveBtn=el('button',{class:'save-result-btn',onClick:async()=>{
+          const h=parseInt(hInp.value), a=parseInt(aInp.value);
+          if(isNaN(h)||isNaN(a)){alert('Enter both scores');return;}
+          saveBtn.textContent='Saving...';
+          saveBtn.disabled=true;
+          try{
+            const res=await fetch(`${API_BASE}/records/result`,{
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({prediction_id:p.id,home_score:h,away_score:a})
+            });
+            const d=await res.json();
+            saveBtn.textContent=d.correct?'✅ Correct!':'❌ Wrong';
+            saveBtn.style.background=d.correct?'var(--gr)':'var(--rd)';
+            p.result={home_score:h,away_score:a,actual_result:d.actual,prediction_correct:d.correct,score:d.score};
+            setTimeout(renderRows,1500);
+          }catch{saveBtn.textContent='Error';saveBtn.disabled=false;}
+        }},r?'Update':'Save');
+
+        const actionCell=r
+          ?el('td',{},el('div',{class:'result-form'},hInp,el('span',{style:{color:'var(--mu)'}},'-'),aInp,saveBtn))
+          :el('td',{},el('div',{class:'result-form'},hInp,el('span',{style:{color:'var(--mu)'}},'-'),aInp,saveBtn));
+        if(r){hInp.value=r.home_score;aInp.value=r.away_score;}
+
+        const betCol=p.bet_value==='HIGH VALUE'?'var(--gr)':p.bet_value==='MODERATE'?'var(--yw)':'var(--rd)';
+        const tr=el('tr',{},
+          el('td',{style:{color:'var(--mu2)',fontFamily:"'JetBrains Mono',monospace",fontSize:'11px'}},p.date),
+          el('td',{},el('span',{class:`sport-tag sport-${p.sport}`},p.sport)),
+          el('td',{},
+            el('div',{style:{fontWeight:'600',fontSize:'13px'}},`${p.home_team} vs ${p.away_team}`),
+            el('div',{style:{color:'var(--mu2)',fontSize:'10px',marginTop:'2px'}},p.league)
+          ),
+          el('td',{},
+            el('div',{style:{fontWeight:'700',color:'var(--ac)'}},p.prediction),
+            el('div',{style:{color:betCol,fontSize:'10px',fontWeight:'700',marginTop:'2px'}},p.bet_value)
+          ),
+          el('td',{style:{fontFamily:"'JetBrains Mono',monospace",fontWeight:'700'}},`${p.confidence}%`),
+          el('td',{},el('span',{class:`score-pill ${pillClass}`},pillText)),
+          el('td',{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:'10px',color:'var(--mu2)'}},goalsStr),
+          actionCell
+        );
+        tbody.append(tr);
+      });
+    }
+
+    renderRows();
+    return wrap;
+  }
 }
 
 init();
