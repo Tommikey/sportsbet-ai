@@ -182,6 +182,22 @@ footer{border-top:1px solid var(--br);padding:20px 32px;text-align:center;font-s
 .filter-tabs{display:flex;gap:6px;margin-bottom:20px}
 .ftab{padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--mu);border:1px solid var(--br);background:transparent;transition:all .2s}
 .ftab.active,.ftab:hover{color:var(--tx);border-color:rgba(0,245,160,.3);background:rgba(0,245,160,.06)}
+
+/* LIVE SCORE PULSE */
+.live-score{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px;background:rgba(0,245,160,.08);border:1px solid rgba(0,245,160,.2);color:var(--gr)}
+.live-score .pulse{width:7px;height:7px;background:var(--gr);border-radius:50%;animation:blink .9s infinite}
+.finished-score{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px}
+.finished-score.correct{background:rgba(0,245,160,.12);border:1px solid rgba(0,245,160,.25);color:var(--gr)}
+.finished-score.wrong{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.2);color:var(--rd)}
+.finished-score.unknown{background:rgba(255,255,255,.06);border:1px solid var(--br);color:var(--mu2)}
+.pending-score{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mu);padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--br)}
+.sync-btn{background:var(--s2);border:1px solid var(--br2);border-radius:8px;padding:7px 16px;color:var(--mu2);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:all .2s;display:flex;align-items:center;gap:6px}
+.sync-btn:hover{border-color:rgba(0,245,160,.3);color:var(--ac)}
+.sync-btn.syncing{color:var(--ac);border-color:rgba(0,245,160,.3)}
+.last-sync{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mu);margin-left:8px}
+.mkt-correct{color:var(--gr)}
+.mkt-wrong{color:var(--rd)}
+.mkt-pending{color:var(--mu)}
 </style>
 </head>
 <body>
@@ -257,10 +273,10 @@ function GoalsSection(g){
 
   const mGrid=el('div',{class:'goals-grid'});
   const markets=[
-    ['Over 1.5',g.markets?.over_1_5],
-    ['Over 2.5',g.markets?.over_2_5],
-    ['Over 3.5',g.markets?.over_3_5],
-    ['BTTS',g.markets?.btts],
+    ['Over 1.5',g.markets && g.markets.over_1_5],
+    ['Over 2.5',g.markets && g.markets.over_2_5],
+    ['Over 3.5',g.markets && g.markets.over_3_5],
+    ['BTTS',g.markets && g.markets.btts],
   ];
   markets.forEach(([name,m])=>{
     if(!m) return;
@@ -285,7 +301,7 @@ function GoalsSection(g){
   });
   sec.append(mGrid);
 
-  if(g.correct_score?.length){
+  if(g.correct_score && g.correct_score.length){
     const st=el('div',{class:'score-table'});
     st.append(el('div',{class:'score-table-title'},'TOP CORRECT SCORE PICKS'));
     const chips=el('div',{class:'score-chips'});
@@ -350,7 +366,10 @@ function PredCard(p,idx){
 // ─── FETCH FROM BACKEND ──────────────────────────────────────────────────────
 async function fetchPredictions(sport){
   try{
-    const r=await fetch(`${API_BASE}/${sport}/predict/auto`,{signal:AbortSignal.timeout(8000)});
+    const controller=new AbortController();
+      const tid=setTimeout(()=>controller.abort(),8000);
+      const r=await fetch(`${API_BASE}/${sport}/predict/auto`,{signal:controller.signal});
+      clearTimeout(tid);
     const d=await r.json();
     return{preds:d.predictions||[],source:d.source||'live',count:d.count||0};
   }catch{
@@ -372,9 +391,9 @@ async function autoSavePredictions(sport, preds){
       prediction: p.prediction||'Unknown',
       confidence: p.confidence||50,
       bet_value: p.bet_value||'MODERATE',
-      home_win_prob: p.probs?.['Home Win']||p.probabilities?.home_win||50,
-      draw_prob: p.probs?.['Draw']||p.probabilities?.draw||0,
-      away_win_prob: p.probs?.['Away Win']||p.probabilities?.away_win||50,
+      home_win_prob: (p.probs && p.probs['Home Win'])||(p.probabilities && p.probabilities.home_win)||50,
+      draw_prob: (p.probs && p.probs['Draw'])||(p.probabilities && p.probabilities.draw)||0,
+      away_win_prob: (p.probs && p.probs['Away Win'])||(p.probabilities && p.probabilities.away_win)||50,
       intel: p.intel||null,
       goals_data: p.goals||null,
       source: p.source||'curated',
@@ -463,9 +482,12 @@ function init(){
   srcBadge=document.getElementById('src-badge');
 
   async function switchSport(sport){
+    // Clean up history interval if active
+    const existingWrap = grid.querySelector('[data-cleanup]');
+    if(existingWrap && existingWrap._cleanup) existingWrap._cleanup();
     activeSport=sport;
     Object.entries(tabBtns).forEach(([s,b])=>b.className=`tab${s===sport?' active':''}`);
-    ctxBar.textContent=SPORT_META[sport]?.ctx||'';
+    ctxBar.textContent=SPORT_META[sport] && SPORT_META[sport].ctx||'';
     grid.innerHTML='';
     grid.append(html(`<div class="loading"><div class="spinner"></div><div class="loading-txt">FETCHING LIVE DATA...</div></div>`));
 
@@ -515,54 +537,49 @@ function init(){
 
   function buildHistoryUI(histData, accData, streakData){
     const wrap=el('div',{class:'history-wrap',style:{gridColumn:'1/-1'}});
+    let lastSyncTime = null;
+    let syncInterval = null;
 
-    // ── Accuracy Stats ──
+    // ── Accuracy Stats ──────────────────────────────────────────────────────
     const accSec=el('div',{class:'hist-section'});
-    accSec.append(el('div',{class:'hist-section-hdr'},
+    const syncBtn=el('button',{class:'sync-btn',onClick:triggerSync},'🔄 Sync Scores');
+    const lastSyncEl=el('span',{class:'last-sync'},'');
+    const accHdr=el('div',{class:'hist-section-hdr'},
       el('div',{class:'hist-section-title'},'MODEL ',el('span',{class:'hl'},'ACCURACY')),
-      el('div',{class:'streak-badge'},`🔥 ${streakData.current_streak} Streak`)
-    ));
+      el('div',{style:{display:'flex',alignItems:'center',gap:'12px'}},
+        syncBtn, lastSyncEl,
+        el('div',{class:'streak-badge'},`🔥 ${streakData.current_streak} Streak`)
+      )
+    );
+    accSec.append(accHdr);
     const overall=accData.overall||{};
     const accGrid=el('div',{class:'acc-grid'});
-    const accItems=[
+    [
       [overall.total||0,'Total Predictions'],
       [overall.correct||0,'Correct'],
-      [(overall.accuracy_pct||0)+'%','Overall Accuracy'],
-      [streakData.current_streak||0,'Current Streak'],
-    ];
-    accItems.forEach(([n,l])=>{
-      accGrid.append(el('div',{class:'acc-item'},
-        el('div',{class:'acc-num'},String(n)),
-        el('div',{class:'acc-lbl'},l)
-      ));
-    });
-    // Per sport
-    (accData.by_sport||[]).forEach(s=>{
-      accGrid.append(el('div',{class:'acc-item'},
-        el('div',{class:'acc-num'},s.accuracy_pct+'%'),
-        el('div',{class:'acc-lbl'},s.sport.toUpperCase()+' Acc')
-      ));
+      [(overall.accuracy_pct||0)+'%','Accuracy'],
+      [streakData.current_streak||0,'Win Streak'],
+    ].concat((accData.by_sport||[]).map(s=>[s.accuracy_pct+'%',s.sport.toUpperCase()])).forEach(([n,l])=>{
+      accGrid.append(el('div',{class:'acc-item'},el('div',{class:'acc-num'},String(n)),el('div',{class:'acc-lbl'},l)));
     });
     accSec.append(accGrid);
     wrap.append(accSec);
 
-    // ── History Table ──
+    // ── History Table ────────────────────────────────────────────────────────
     const histSec=el('div',{class:'hist-section'});
     histSec.append(el('div',{class:'hist-section-hdr'},
-      el('div',{class:'hist-section-title'},'PREDICTION ',el('span',{class:'hl'},'HISTORY')),
+      el('div',{class:'hist-section-title'},'PREDICTION ',el('span',{class:'hl'},'RECORD')),
       el('div',{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:'11px',color:'var(--mu2)'}},`${histData.total} records`)
     ));
-
-    // Filter tabs
-    let activeFilter='all';
-    const filterWrap=el('div',{style:{padding:'16px 20px 0'}});
+    const filterWrap=el('div',{style:{padding:'14px 20px 0'}});
     const filterTabs=el('div',{class:'filter-tabs'});
     const filters=['all','soccer','nba','nfl','tennis','✅ correct','❌ wrong','⏳ pending'];
+    let activeFilter='all';
     const fBtns={};
     filters.forEach(f=>{
       const b=el('button',{class:`ftab${f==='all'?' active':''}`,onClick:()=>{
         activeFilter=f;
-        Object.values(fBtns).forEach(b=>b.classList.remove('active'));
+        Object.values(fBtns).forEach(x=>x.classList.remove('active'));
         b.classList.add('active');
         renderRows();
       }},f);
@@ -571,11 +588,10 @@ function init(){
     });
     filterWrap.append(filterTabs);
     histSec.append(filterWrap);
-
     const tableWrap=el('div',{style:{overflowX:'auto'}});
     const table=el('table',{class:'history-table'});
     table.append(el('thead',{},el('tr',{},
-      ..['Date','Sport','Match','Prediction','Confidence','Score / Result','Goals Market','Action'].map(h=>el('th',{},h))
+      ...['Date','Sport','Match','Our Prediction','Conf','Live Score / Result','Goals Markets'].map(h=>el('th',{},h))
     )));
     const tbody=el('tbody');
     table.append(tbody);
@@ -583,90 +599,110 @@ function init(){
     histSec.append(tableWrap);
     wrap.append(histSec);
 
-    const preds=histData.predictions||[];
+    let allPreds = histData.predictions||[];
+
+    function scoreCell(p){
+      const r = p.result;
+      if(!r) return el('div',{class:'pending-score'},'⏳ Awaiting kick-off');
+      const scoreStr = (r.home_score!==null&&r.home_score!==undefined&&r.away_score!==null&&r.away_score!==undefined) ? `${r.home_score} — ${r.away_score}` : '? — ?';
+      const notes = r.notes||'';
+      const isLive = notes.indexOf('[LIVE]')>-1 || notes.indexOf('[1H]')>-1 || notes.indexOf('[2H]')>-1 || notes.indexOf('[HT]')>-1;
+      const isFinal = r.prediction_correct !== null;
+      if(isLive && !isFinal){
+        const el2=el('div',{class:'live-score'},el('div',{class:'pulse'}),'LIVE ',scoreStr);
+        return el2;
+      }
+      if(isFinal){
+        const cls = r.prediction_correct===true?'correct':r.prediction_correct===false?'wrong':'unknown';
+        const icon = r.prediction_correct===true?'✅':r.prediction_correct===false?'❌':'?';
+        return el('div',{class:`finished-score ${cls}`},icon,' ',scoreStr);
+      }
+      return el('div',{class:'pending-score'},scoreStr||'⏳');
+    }
+
+    function marketsCell(p){
+      if(!p.goals_data && p.goals_data.markets) return el('span',{class:'mkt-pending'},'—');
+      const m = p.goals_data.markets;
+      const r = p.result;
+      const wrap2 = el('div',{style:{fontSize:'10px',fontFamily:"'JetBrains Mono',monospace",lineHeight:'1.8'}});
+      const items = [
+        ['O1.5', m.over_1_5, r&&(r.home_score+r.away_score)>1.5],
+        ['O2.5', m.over_2_5, r&&(r.home_score+r.away_score)>2.5],
+        ['O3.5', m.over_3_5, r&&(r.home_score+r.away_score)>3.5],
+        ['BTTS', m.btts,     r&&r.home_score>=1&&r.away_score>=1],
+      ];
+      items.forEach(([name,mkt,actual])=>{
+        if(!mkt) return;
+        const rec = mkt && mkt.recommendation;
+        let icon = '';
+        if(r&&r.prediction_correct !== null){
+          const correct = (rec==='YES') === actual;
+          icon = correct ? ' ✅' : ' ❌';
+        }
+        const col = rec==='YES'?'var(--gr)':'var(--rd)';
+        wrap2.append(el('span',{style:{color:col,marginRight:'8px'}},`${name}:${rec}${icon}`));
+      });
+      return wrap2;
+    }
 
     function renderRows(){
       tbody.innerHTML='';
-      const filtered=preds.filter(p=>{
+      const filtered = allPreds.filter(p=>{
         if(activeFilter==='all') return true;
-        if(activeFilter==='✅ correct') return p.result?.prediction_correct===true;
-        if(activeFilter==='❌ wrong') return p.result?.prediction_correct===false;
+        if(activeFilter==='✅ correct') return p.result && p.result.prediction_correct===true;
+        if(activeFilter==='❌ wrong')   return p.result && p.result.prediction_correct===false;
         if(activeFilter==='⏳ pending') return !p.result;
         return p.sport===activeFilter;
       });
-
       if(!filtered.length){
-        tbody.append(el('tr',{},el('td',{colspan:'8',style:{textAlign:'center',padding:'40px',color:'var(--mu2)'}},
-          'No records match this filter yet.'
-        )));
+        tbody.append(el('tr',{},el('td',{colspan:'7',style:{textAlign:'center',padding:'40px',color:'var(--mu2)'}},'No records match this filter.')));
         return;
       }
-
       filtered.forEach(p=>{
-        const r=p.result;
-        const scoreStr=r?(r.score||'?-?'):'—';
-        const correct=r?r.prediction_correct:null;
-        const pillClass=correct===true?'correct':correct===false?'wrong':'pending';
-        const pillText=r?`${scoreStr} ${correct?'✅':'❌'}`:'Awaiting result';
-
-        // Goals market summary
-        let goalsStr='—';
-        if(p.goals_data?.markets){
-          const m=p.goals_data.markets;
-          const o25=m.over_2_5?.recommendation;
-          const bt=m.btts?.recommendation;
-          const o25c=r?((p.goals_data.predicted_total>2.5)===(o25==='YES')?'✅':'❌'):'';
-          const btc=r?((r.home_score>=1&&r.away_score>=1)===(bt==='YES')?'✅':'❌'):'';
-          goalsStr=`O2.5:${o25}${o25c} BTTS:${bt}${btc}`;
-        }
-
-        // Result input form
-        const hInp=el('input',{class:'score-inp',type:'number',min:'0',max:'20',placeholder:'H'});
-        const aInp=el('input',{class:'score-inp',type:'number',min:'0',max:'20',placeholder:'A'});
-        const saveBtn=el('button',{class:'save-result-btn',onClick:async()=>{
-          const h=parseInt(hInp.value), a=parseInt(aInp.value);
-          if(isNaN(h)||isNaN(a)){alert('Enter both scores');return;}
-          saveBtn.textContent='Saving...';
-          saveBtn.disabled=true;
-          try{
-            const res=await fetch(`${API_BASE}/records/result`,{
-              method:'POST',
-              headers:{'Content-Type':'application/json'},
-              body:JSON.stringify({prediction_id:p.id,home_score:h,away_score:a})
-            });
-            const d=await res.json();
-            saveBtn.textContent=d.correct?'✅ Correct!':'❌ Wrong';
-            saveBtn.style.background=d.correct?'var(--gr)':'var(--rd)';
-            p.result={home_score:h,away_score:a,actual_result:d.actual,prediction_correct:d.correct,score:d.score};
-            setTimeout(renderRows,1500);
-          }catch{saveBtn.textContent='Error';saveBtn.disabled=false;}
-        }},r?'Update':'Save');
-
-        const actionCell=r
-          ?el('td',{},el('div',{class:'result-form'},hInp,el('span',{style:{color:'var(--mu)'}},'-'),aInp,saveBtn))
-          :el('td',{},el('div',{class:'result-form'},hInp,el('span',{style:{color:'var(--mu)'}},'-'),aInp,saveBtn));
-        if(r){hInp.value=r.home_score;aInp.value=r.away_score;}
-
         const betCol=p.bet_value==='HIGH VALUE'?'var(--gr)':p.bet_value==='MODERATE'?'var(--yw)':'var(--rd)';
         const tr=el('tr',{},
           el('td',{style:{color:'var(--mu2)',fontFamily:"'JetBrains Mono',monospace",fontSize:'11px'}},p.date),
           el('td',{},el('span',{class:`sport-tag sport-${p.sport}`},p.sport)),
           el('td',{},
-            el('div',{style:{fontWeight:'600',fontSize:'13px'}},`${p.home_team} vs ${p.away_team}`),
+            el('div',{style:{fontWeight:'600',fontSize:'12px'}},`${p.home_team} vs ${p.away_team}`),
             el('div',{style:{color:'var(--mu2)',fontSize:'10px',marginTop:'2px'}},p.league)
           ),
           el('td',{},
-            el('div',{style:{fontWeight:'700',color:'var(--ac)'}},p.prediction),
-            el('div',{style:{color:betCol,fontSize:'10px',fontWeight:'700',marginTop:'2px'}},p.bet_value)
+            el('div',{style:{fontWeight:'700',color:'var(--ac)',fontSize:'13px'}},p.prediction),
+            el('div',{style:{color:betCol,fontSize:'9px',fontWeight:'800',marginTop:'2px',letterSpacing:'1px'}},p.bet_value)
           ),
           el('td',{style:{fontFamily:"'JetBrains Mono',monospace",fontWeight:'700'}},`${p.confidence}%`),
-          el('td',{},el('span',{class:`score-pill ${pillClass}`},pillText)),
-          el('td',{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:'10px',color:'var(--mu2)'}},goalsStr),
-          actionCell
+          el('td',{},scoreCell(p)),
+          el('td',{},marketsCell(p))
         );
         tbody.append(tr);
       });
     }
+
+    async function triggerSync(){
+      syncBtn.className='sync-btn syncing';
+      syncBtn.textContent='⏳ Syncing...';
+      try{
+        await fetch(`${API_BASE}/sync/scores`,{method:'POST'});
+        // Reload history after sync
+        const [h2,a2,s2]=await Promise.all([
+          fetch(`${API_BASE}/records/history?days=60`).then(r=>r.json()),
+          fetch(`${API_BASE}/records/accuracy`).then(r=>r.json()),
+          fetch(`${API_BASE}/records/streak`).then(r=>r.json()),
+        ]);
+        allPreds = h2.predictions||[];
+        lastSyncTime = new Date();
+        lastSyncEl.textContent = `Synced ${lastSyncTime.toLocaleTimeString()}`;
+        renderRows();
+      }catch(e){console.log('Sync failed',e);}
+      syncBtn.className='sync-btn';
+      syncBtn.textContent='🔄 Sync Scores';
+    }
+
+    // Auto-sync every 5 min while on history tab
+    syncInterval = setInterval(triggerSync, 5*60*1000);
+    // Clean up when tab switches
+    wrap._cleanup = ()=>clearInterval(syncInterval);
 
     renderRows();
     return wrap;
