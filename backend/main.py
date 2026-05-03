@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from database import create_tables
 
 from services.score_fetcher import run_score_sync
@@ -12,8 +11,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SportsBet AI API", version="2.0.0")
-
-import os
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,15 +28,21 @@ scheduler = BackgroundScheduler()
 def startup():
     create_tables()
     logger.info("✅ DB tables ready")
-    # Run immediately on boot, then every 5 minutes
+    # Run immediately on boot, then every interval
     try:
         run_score_sync()
     except Exception as e:
         logger.warning(f"Initial score sync failed (non-fatal): {e}")
-    scheduler.add_job(run_score_sync, "interval", minutes=5, id="score_sync",
-                      max_instances=1, misfire_grace_time=60)
+    scheduler.add_job(
+        run_score_sync,
+        "interval",
+        minutes=int(os.environ.get("SCORE_SYNC_INTERVAL_MIN", 5)),
+        id="score_sync",
+        max_instances=1,
+        misfire_grace_time=60,
+    )
     scheduler.start()
-    logger.info("⏰ Score sync scheduler started (every 5 min)")
+    logger.info(f"⏰ Score sync scheduler started (every {os.environ.get('SCORE_SYNC_INTERVAL_MIN', '5')} min)")
 
 
 @app.on_event("shutdown")
