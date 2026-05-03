@@ -3,8 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import create_tables
 
-# FIX: import directly from root-level score_fetcher, not from non-existent services package
-from score_fetcher import run_score_sync
+from services.score_fetcher import run_score_sync
 
 from apscheduler.schedulers.background import BackgroundScheduler
 import uvicorn, logging, os

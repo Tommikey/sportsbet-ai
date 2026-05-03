@@ -8,8 +8,7 @@ import hashlib
 import urllib.error
 from datetime import datetime
 
-# FIX: import directly from root-level mock_data, not from non-existent data package
-from mock_data import get_soccer_fixtures, get_nba_fixtures, get_nfl_fixtures, get_tennis_fixtures
+from data.mock_data import get_soccer_fixtures, get_nba_fixtures, get_nfl_fixtures, get_tennis_fixtures
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; SportsBetAI/2.0)",
