@@ -7,19 +7,34 @@ import urllib.request
 import json
 import urllib.error
 import logging
+import os
 from datetime import datetime, timedelta
 from data.mock_data import get_soccer_fixtures, get_nba_fixtures, get_nfl_fixtures, get_tennis_fixtures
 
 logger = logging.getLogger(__name__)
 
-HEADERS = {
+# Base headers for public APIs (ESPN, etc.)
+BASE_HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; SportsBetAI/1.0)",
     "Accept": "application/json",
-    "x-rapidapi-host": "api-football-v1.p.rapidapi.com",
 }
 
-def _fetch(url, extra_headers=None):
-    h = dict(HEADERS)
+# RapidAPI headers for API-Football (if key is configured)
+RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY")
+RAPIDAPI_HEADERS = {
+    "x-rapidapi-host": "api-football-v1.p.rapidapi.com",
+    "x-rapidapi-key": RAPIDAPI_KEY or "",
+}
+
+def _fetch(url, extra_headers=None, use_rapidapi=False):
+    """Fetch from URL with appropriate headers.
+    
+    Args:
+        url: API endpoint URL
+        extra_headers: Optional dict of extra headers to merge
+        use_rapidapi: If True, use RapidAPI headers; otherwise use base headers
+    """
+    h = dict(RAPIDAPI_HEADERS if use_rapidapi else BASE_HEADERS)
     if extra_headers:
         h.update(extra_headers)
     req = urllib.request.Request(url, headers=h)
