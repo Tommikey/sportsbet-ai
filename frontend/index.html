@@ -243,10 +243,11 @@ footer{border-top:1px solid var(--br);padding:22px 32px;text-align:center;font-s
 </head>
 <body>
 <div class="app" id="root"></div>
+<script src="/config.js"></script>
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
-// FIX: Corrected API_BASE URL to match actual Railway deployment slug
-const API_BASE = "https://sportsbet-ai-production-0a2f.up.railway.app/api";
+// FIX: Use runtime-configured API_BASE if available; otherwise default to same-origin /api
+const API_BASE = window.API_BASE || `${window.location.origin}/api`;
 const TODAY = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 
 // ─── CURATED FALLBACK DATA ───────────────────────────────────────────────────
