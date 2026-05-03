@@ -13,12 +13,15 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SportsBet AI API", version="2.0.0")
 
+import os
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    max_age=3600,  # Cache preflight for 1 hour
 )
 
 scheduler = BackgroundScheduler()
@@ -86,5 +89,6 @@ def manual_sync():
 
 
 if __name__ == "__main__":
+    reload = os.environ.get("ENV") != "production"
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload)
