@@ -30,9 +30,15 @@ def startup():
     logger.info("✅ DB tables ready")
     # Run immediately on boot then every 5 minutes
     run_score_sync()
-    scheduler.add_job(run_score_sync, "interval", minutes=5, id="score_sync")
+    scheduler.add_job(
+        run_score_sync,
+        "interval",
+        minutes=int(os.environ.get("SCORE_SYNC_INTERVAL_MIN", 5)),
+        id="score_sync",
+        max_instances=1,
+    )
     scheduler.start()
-    logger.info("⏰ Score sync scheduler started (every 5 min)")
+    logger.info(f"⏰ Score sync scheduler started (every {os.environ.get('SCORE_SYNC_INTERVAL_MIN', '5')} min)")
 
 @app.on_event("shutdown")
 def shutdown():

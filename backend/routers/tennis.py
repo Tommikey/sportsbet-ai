@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from models.predictor import get_engine
-from data.mock_data import get_tennis_fixtures
+from data.live_fetcher import get_live_tennis_fixtures
 from pydantic import BaseModel
 from typing import Optional
 
@@ -22,7 +22,7 @@ class MatchInput(BaseModel):
 
 @router.get("/fixtures")
 def get_fixtures():
-    return get_tennis_fixtures()
+    return get_live_tennis_fixtures()
 
 @router.post("/predict")
 def predict_match(match: MatchInput):
@@ -40,14 +40,15 @@ def predict_match(match: MatchInput):
 @router.get("/predict/auto")
 def predict_all_fixtures():
     engine = get_engine("tennis")
-    fixtures = get_tennis_fixtures()
+    data = get_live_tennis_fixtures()
+    fixtures = data.get("fixtures", [])
     predictions = []
-    for f in fixtures["fixtures"]:
+    for f in fixtures:
         result = engine.predict(f["features"])
         result["home_team"] = f["home_team"]
         result["away_team"] = f["away_team"]
-        result["league"] = f["league"]
+        result["league"] = f.get("league", "Tennis")
         result["date"] = f["date"]
         result["sport"] = "Tennis"
         predictions.append(result)
-    return {"predictions": predictions}
+    return {"predictions": predictions, "source": data.get("source", "curated"), "count": len(predictions)}

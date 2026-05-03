@@ -2,7 +2,6 @@ from fastapi import APIRouter
 from models.predictor import get_engine
 from models.goals_predictor import get_goals_engine
 from data.live_fetcher import get_live_soccer_fixtures
-from data.mock_data import get_soccer_fixtures
 from pydantic import BaseModel
 from typing import Optional
 

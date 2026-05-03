@@ -11,6 +11,8 @@ from database import SessionLocal, DailyPrediction, MatchResult
 logger = logging.getLogger(__name__)
 
 API_FOOTBALL_KEY = os.environ.get("API_FOOTBALL_KEY", "")
+if not API_FOOTBALL_KEY:
+    logger.warning("API_FOOTBALL_KEY is not set. Soccer live sync will only use ESPN fallback.")
 
 ESPN_ENDPOINTS = {
     "soccer": ["eng.1","esp.1","ger.1","ita.1","fra.1","uefa.champions","uefa.europa","usa.1"],

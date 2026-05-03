@@ -118,6 +118,71 @@ def fetch_live_nba():
     return fixtures
 
 
+def fetch_live_nfl():
+    url = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
+    data = _fetch(url)
+    fixtures = []
+    if not data or not data.get("events"):
+        return fixtures
+    for event in data["events"]:
+        try:
+            comp = event.get("competitions", [{}])[0]
+            competitors = comp.get("competitors", [])
+            if len(competitors) < 2:
+                continue
+            home = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
+            away = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
+            home_name = home.get("team", {}).get("displayName", "Home")
+            away_name = away.get("team", {}).get("displayName", "Away")
+            status = comp.get("status", {}).get("type", {}).get("description", "Scheduled")
+            fixtures.append({
+                "home_team": home_name,
+                "away_team": away_name,
+                "league": "NFL",
+                "date": event.get("date", "")[:16].replace("T", " "),
+                "status": status,
+                "intel": f"NFL game — {status}.",
+                "features": _estimate_features_nfl(home_name, away_name),
+            })
+        except Exception as e:
+            logger.debug(f"Error parsing NFL event: {e}")
+            continue
+    return fixtures
+
+
+def fetch_live_tennis():
+    fixtures = []
+    for tour in ["atp", "wta"]:
+        url = f"https://site.api.espn.com/apis/site/v2/sports/tennis/{tour}/scoreboard"
+        data = _fetch(url)
+        if not data or not data.get("events"):
+            continue
+        for event in data["events"]:
+            try:
+                comp = event.get("competitions", [{}])[0]
+                competitors = comp.get("competitors", [])
+                if len(competitors) < 2:
+                    continue
+                home = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
+                away = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
+                home_name = home.get("team", {}).get("displayName", "Home")
+                away_name = away.get("team", {}).get("displayName", "Away")
+                status = comp.get("status", {}).get("type", {}).get("description", "Scheduled")
+                fixtures.append({
+                    "home_team": home_name,
+                    "away_team": away_name,
+                    "league": f"{tour.upper()} Tennis",
+                    "date": event.get("date", "")[:16].replace("T", " "),
+                    "status": status,
+                    "intel": f"Tennis match — {status}.",
+                    "features": _estimate_features_tennis(home_name, away_name),
+                })
+            except Exception as e:
+                logger.debug(f"Error parsing Tennis event for {tour}: {e}")
+                continue
+    return fixtures
+
+
 def _estimate_features(home, away):
     """Generate realistic features based on team name heuristics."""
     import hashlib
@@ -158,12 +223,53 @@ def _estimate_features_nba(home, away):
     }
 
 
+def _estimate_features_nfl(home, away):
+    import hashlib
+    def seed(name):
+        return int(hashlib.md5(name.encode()).hexdigest(), 16) % 100 / 100
+    h = seed(home)
+    a = seed(away)
+    return {
+        "home_form": round(0.4 + h * 0.5, 2),
+        "away_form": round(0.4 + a * 0.5, 2),
+        "h2h": round(0.45 + (h - a) * 0.1, 2),
+        "home_goals_avg": round(18 + h * 20, 1),
+        "away_goals_avg": round(18 + a * 20, 1),
+        "home_defense": round(18 + (1 - a) * 6, 1),
+        "away_defense": round(18 + (1 - h) * 6, 1),
+        "home_advantage": 0.10,
+        "fatigue_diff": round((h - a) * 0.2, 2),
+        "rank_diff": round((h - a) * 20, 1),
+    }
+
+
+def _estimate_features_tennis(home, away):
+    import hashlib
+    def seed(name):
+        return int(hashlib.md5(name.encode()).hexdigest(), 16) % 100 / 100
+    h = seed(home)
+    a = seed(away)
+    return {
+        "home_form": round(0.45 + h * 0.45, 2),
+        "away_form": round(0.45 + a * 0.45, 2),
+        "h2h": round(0.45 + (h - a) * 0.15, 2),
+        "home_goals_avg": round(0.5 + h * 0.4, 2),
+        "away_goals_avg": round(0.5 + a * 0.4, 2),
+        "home_defense": round(0.5 + (1 - a) * 0.4, 2),
+        "away_defense": round(0.5 + (1 - h) * 0.4, 2),
+        "home_advantage": round(0.02 + h * 0.05, 2),
+        "fatigue_diff": round((h - a) * 0.1, 2),
+        "rank_diff": round((h - a) * 15, 1),
+    }
+
+
 def get_live_soccer_fixtures():
     """Try live, fall back to curated mock data."""
     live = fetch_live_soccer()
-    if live and len(live) >= 3:
+    if live:
+        logger.info(f"Found {len(live)} live soccer fixtures")
         return {"fixtures": live, "source": "live"}
-    # Fall back to mock
+    logger.info("No live soccer fixtures found; falling back to curated fixtures")
     mock = get_soccer_fixtures()
     mock["source"] = "curated"
     return mock
@@ -171,8 +277,32 @@ def get_live_soccer_fixtures():
 
 def get_live_nba_fixtures():
     live = fetch_live_nba()
-    if live and len(live) >= 2:
+    if live:
+        logger.info(f"Found {len(live)} live NBA fixtures")
         return {"fixtures": live, "source": "live"}
+    logger.info("No live NBA fixtures found; falling back to curated fixtures")
     mock = get_nba_fixtures()
+    mock["source"] = "curated"
+    return mock
+
+
+def get_live_nfl_fixtures():
+    live = fetch_live_nfl()
+    if live:
+        logger.info(f"Found {len(live)} live NFL fixtures")
+        return {"fixtures": live, "source": "live"}
+    logger.info("No live NFL fixtures found; falling back to curated fixtures")
+    mock = get_nfl_fixtures()
+    mock["source"] = "curated"
+    return mock
+
+
+def get_live_tennis_fixtures():
+    live = fetch_live_tennis()
+    if live:
+        logger.info(f"Found {len(live)} live tennis fixtures")
+        return {"fixtures": live, "source": "live"}
+    logger.info("No live tennis fixtures found; falling back to curated fixtures")
+    mock = get_tennis_fixtures()
     mock["source"] = "curated"
     return mock
