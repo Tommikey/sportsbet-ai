@@ -85,7 +85,8 @@ def fetch_espn_scores(sport: str, league: str):
         try:
             hs = int(home.get("score",0)) if home.get("score") is not None else None
             as_ = int(away.get("score",0)) if away.get("score") is not None else None
-        except:
+        except Exception as e:
+            logger.warning(f"Error parsing scores for {home.get('team',{}).get('displayName','')} vs {away.get('team',{}).get('displayName','')}: {e}")
             hs = as_ = None
         results.append({
             "home_team": home.get("team",{}).get("displayName",""),

@@ -6,8 +6,11 @@ Uses no API key for ESPN public endpoints via server-side requests.
 import urllib.request
 import json
 import urllib.error
+import logging
 from datetime import datetime, timedelta
 from data.mock_data import get_soccer_fixtures, get_nba_fixtures, get_nfl_fixtures, get_tennis_fixtures
+
+logger = logging.getLogger(__name__)
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; SportsBetAI/1.0)",
@@ -23,7 +26,8 @@ def _fetch(url, extra_headers=None):
     try:
         with urllib.request.urlopen(req, timeout=8) as r:
             return json.loads(r.read())
-    except Exception:
+    except Exception as e:
+        logger.debug(f"API request failed for {url}: {type(e).__name__}: {e}")
         return None
 
 def fetch_live_soccer():
@@ -78,7 +82,8 @@ def fetch_live_soccer():
                     "intel": f"Live fixture from {league_name}. Status: {status}.",
                     "features": _estimate_features(home_name, away_name),
                 })
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Error parsing event for {league_id}: {e}")
                 continue
     return all_fixtures
 
@@ -107,7 +112,8 @@ def fetch_live_nba():
                 "intel": f"NBA game — {status}.",
                 "features": _estimate_features_nba(home.get("team", {}).get("displayName", ""), away.get("team", {}).get("displayName", "")),
             })
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Error parsing NBA event: {e}")
             continue
     return fixtures
 

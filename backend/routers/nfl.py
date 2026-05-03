@@ -27,11 +27,12 @@ def get_fixtures():
 @router.post("/predict")
 def predict_game(game: GameInput):
     engine = get_engine("nfl")
-    features = game.dict()
-    features.pop("home_team"); features.pop("away_team")
+    home_team = game.home_team
+    away_team = game.away_team
+    features = {k: v for k, v in game.dict().items() if k not in ["home_team", "away_team"]}
     result = engine.predict(features)
-    result["home_team"] = game.home_team
-    result["away_team"] = game.away_team
+    result["home_team"] = home_team
+    result["away_team"] = away_team
     result["sport"] = "NFL"
     return result
 

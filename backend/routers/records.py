@@ -1,7 +1,7 @@
 """
 Records router — save predictions, log results, view history.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from database import get_db, DailyPrediction, MatchResult, ModelAccuracy
@@ -152,6 +152,7 @@ def log_result(data: ResultIn, db: Session = Depends(get_db)):
 
 
 def _update_accuracy(db, sport):
+    """Update daily accuracy metrics for a given sport based on completed predictions."""
     today = date.today()
     preds = db.query(DailyPrediction).filter(
         DailyPrediction.sport == sport,
@@ -180,7 +181,7 @@ def _update_accuracy(db, sport):
 @router.get("/history")
 def get_history(
     sport: Optional[str] = None,
-    days: int = 30,
+    days: int = Query(30, ge=1, le=365),
     db: Session = Depends(get_db)
 ):
     """Get prediction history for last N days."""

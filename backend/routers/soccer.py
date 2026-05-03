@@ -30,11 +30,12 @@ def get_fixtures():
 def predict_match(match: MatchInput):
     engine = get_engine("soccer")
     goals_engine = get_goals_engine()
-    features = match.dict()
-    features.pop("home_team"); features.pop("away_team")
+    home_team = match.home_team
+    away_team = match.away_team
+    features = {k: v for k, v in match.dict().items() if k not in ["home_team", "away_team"]}
     result = engine.predict(features)
-    result["home_team"] = match.home_team
-    result["away_team"] = match.away_team
+    result["home_team"] = home_team
+    result["away_team"] = away_team
     result["sport"] = "Soccer"
     result["goals"] = goals_engine.predict_goals(features)
     return result
