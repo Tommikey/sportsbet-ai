@@ -1,33 +1,36 @@
 """
-Live fixture fetcher using API-Football (free tier: 100 calls/day).
-Falls back to generated fixtures if API unavailable.
-Uses no API key for ESPN public endpoints via server-side requests.
+Live fixture fetcher using ESPN public API + API-Football.
+Falls back to curated mock data if APIs are unavailable.
 """
 import urllib.request
 import json
+import hashlib
 import urllib.error
-from datetime import datetime, timedelta
-from data.mock_data import get_soccer_fixtures, get_nba_fixtures, get_nfl_fixtures, get_tennis_fixtures
+from datetime import datetime
+
+# FIX: import directly from root-level mock_data, not from non-existent data package
+from mock_data import get_soccer_fixtures, get_nba_fixtures, get_nfl_fixtures, get_tennis_fixtures
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; SportsBetAI/1.0)",
+    "User-Agent": "Mozilla/5.0 (compatible; SportsBetAI/2.0)",
     "Accept": "application/json",
-    "x-rapidapi-host": "api-football-v1.p.rapidapi.com",
 }
 
-def _fetch(url, extra_headers=None):
+
+def _fetch(url: str, extra_headers: dict = None, timeout: int = 8):
     h = dict(HEADERS)
     if extra_headers:
         h.update(extra_headers)
     req = urllib.request.Request(url, headers=h)
     try:
-        with urllib.request.urlopen(req, timeout=8) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read())
     except Exception:
         return None
 
+
+# ── Soccer via ESPN ────────────────────────────────────────────────────────────
 def fetch_live_soccer():
-    """Try ESPN scoreboard API for live soccer fixtures across multiple leagues."""
     leagues = {
         "eng.1": "Premier League",
         "esp.1": "La Liga",
@@ -57,7 +60,6 @@ def fetch_live_soccer():
                 date_str = event.get("date", "")[:16].replace("T", " ")
                 status = comp.get("status", {}).get("type", {}).get("description", "Scheduled")
 
-                # Extract odds if available
                 odds = comp.get("odds", [{}])
                 home_odds = away_odds = draw_odds = None
                 if odds:
@@ -83,6 +85,7 @@ def fetch_live_soccer():
     return all_fixtures
 
 
+# ── NBA via ESPN ───────────────────────────────────────────────────────────────
 def fetch_live_nba():
     url = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
     data = _fetch(url)
@@ -105,20 +108,23 @@ def fetch_live_nba():
                 "date": event.get("date", "")[:16].replace("T", " "),
                 "status": status,
                 "intel": f"NBA game — {status}.",
-                "features": _estimate_features_nba(home.get("team", {}).get("displayName", ""), away.get("team", {}).get("displayName", "")),
+                "features": _estimate_features_nba(
+                    home.get("team", {}).get("displayName", ""),
+                    away.get("team", {}).get("displayName", "")
+                ),
             })
         except Exception:
             continue
     return fixtures
 
 
-def _estimate_features(home, away):
-    """Generate realistic features based on team name heuristics."""
-    import hashlib
-    def seed(name):
-        return int(hashlib.md5(name.encode()).hexdigest(), 16) % 100 / 100
-    h = seed(home)
-    a = seed(away)
+# ── Feature estimation ─────────────────────────────────────────────────────────
+def _seed(name: str) -> float:
+    return int(hashlib.md5(name.encode()).hexdigest(), 16) % 100 / 100
+
+
+def _estimate_features(home: str, away: str) -> dict:
+    h, a = _seed(home), _seed(away)
     return {
         "home_form": round(0.4 + h * 0.5, 2),
         "away_form": round(0.4 + a * 0.5, 2),
@@ -132,12 +138,9 @@ def _estimate_features(home, away):
         "rank_diff": round((h - a) * 30, 1),
     }
 
-def _estimate_features_nba(home, away):
-    import hashlib
-    def seed(name):
-        return int(hashlib.md5(name.encode()).hexdigest(), 16) % 100 / 100
-    h = seed(home)
-    a = seed(away)
+
+def _estimate_features_nba(home: str, away: str) -> dict:
+    h, a = _seed(home), _seed(away)
     return {
         "home_form": round(0.4 + h * 0.5, 2),
         "away_form": round(0.4 + a * 0.5, 2),
@@ -152,21 +155,36 @@ def _estimate_features_nba(home, away):
     }
 
 
+# ── Public interface ───────────────────────────────────────────────────────────
 def get_live_soccer_fixtures():
-    """Try live, fall back to curated mock data."""
+    """Try live ESPN data; fall back to curated mock data."""
     live = fetch_live_soccer()
     if live and len(live) >= 3:
         return {"fixtures": live, "source": "live"}
-    # Fall back to mock
     mock = get_soccer_fixtures()
     mock["source"] = "curated"
     return mock
 
 
 def get_live_nba_fixtures():
+    """Try live ESPN data; fall back to curated mock data."""
     live = fetch_live_nba()
     if live and len(live) >= 2:
         return {"fixtures": live, "source": "live"}
     mock = get_nba_fixtures()
+    mock["source"] = "curated"
+    return mock
+
+
+def get_live_nfl_fixtures():
+    """NFL is offseason — use curated data."""
+    mock = get_nfl_fixtures()
+    mock["source"] = "curated"
+    return mock
+
+
+def get_live_tennis_fixtures():
+    """Tennis — use curated data."""
+    mock = get_tennis_fixtures()
     mock["source"] = "curated"
     return mock
